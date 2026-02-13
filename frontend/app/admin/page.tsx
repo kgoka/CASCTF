@@ -4,7 +4,9 @@
       <div className="frame w-full max-w-3xl p-8">
         <h1 className="text-3xl font-semibold text-zinc-100">Admin Console</h1>
         <p className="mt-3 text-zinc-400">
-          Admin login success. Next step: CTF name, period, problems, and solve log management.
+          어드민페이지만들어야합니다.
+          기능 문제 관리: 문제 추가 / 수정 / 삭제 (CRUD)
+          로그 감사: 유저 제출 로그(정답/오답) 전체 조회 기능
         </p>
       </div>
     </main>
