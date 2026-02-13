@@ -1,26 +1,59 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* v4에서는 여기서 테마 설정을 합니다 */
+@theme {
+  /* layout.tsx에서 넘겨준 폰트 변수를 연결 */
+  --font-pixel: var(--font-pixel);
+  
+  /* 커스텀 색상 (네온 그린) */
+  --color-neon: #00ff41; 
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* --- 아래는 아까와 동일한 커스텀 효과 --- */
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #050505;
+  background-image: radial-gradient(circle at center, #111 0%, #000 100%);
+  overflow-x: hidden;
+  font-family: var(--font-pixel), monospace; /* 폰트 적용 */
+}
+
+/* 네온 텍스트 효과 */
+.neon-text {
+  text-shadow: 0 0 5px var(--color-neon), 0 0 10px var(--color-neon), 0 0 20px var(--color-neon);
+}
+
+/* 박스 네온 테두리 */
+.neon-border {
+  box-shadow: 0 0 10px var(--color-neon), inset 0 0 10px var(--color-neon);
+}
+
+/* 스캔라인 효과 */
+.scanlines {
+  background: linear-gradient(
+    to bottom,
+    rgba(255,255,255,0),
+    rgba(255,255,255,0) 50%,
+    rgba(0,0,0,0.2) 50%,
+    rgba(0,0,0,0.2)
+  );
+  background-size: 100% 4px;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+
+/* 깜빡임 애니메이션 */
+@keyframes flicker {
+  0% { opacity: 0.97; }
+  5% { opacity: 0.95; }
+  10% { opacity: 0.9; }
+  15% { opacity: 0.95; }
+  20% { opacity: 0.99; }
+  100% { opacity: 0.95; }
+}
+
+.screen-flicker {
+  animation: flicker 0.15s infinite;
 }
