@@ -7,6 +7,7 @@ import Link from "next/link";
 export default function LoginPage() {
   const apiBaseUrl =
     (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
+  // 메인 화면에서 로그인 폼을 모달로 띄우기 위한 상태
   const [showLogin, setShowLogin] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -18,6 +19,7 @@ export default function LoginPage() {
 
     try {
       setLoading(true);
+      // JWT 쿠키 세션 발급을 위해 credentials: include 필수
       const res = await fetch(`${apiBaseUrl}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -26,6 +28,7 @@ export default function LoginPage() {
       });
 
       if (res.ok) {
+        // 로그인 성공 후 메인으로 이동 (역할/권한은 /api/auth/me로 조회)
         setShowLogin(false);
         router.push("/main");
         return;
@@ -68,6 +71,7 @@ export default function LoginPage() {
           </div>
 
           <div className="flex flex-col md:flex-row gap-6 w-full max-w-md z-20">
+            {/* 로그인 모달 열기 */}
             <button
               onClick={() => setShowLogin(true)}
               className="w-full py-4 bg-zinc-100 text-black hover:bg-white hover:scale-105 transition-all duration-200 uppercase font-bold text-xl shadow-[0_0_15px_rgba(255,255,255,0.45)]"
@@ -75,7 +79,7 @@ export default function LoginPage() {
               LOGIN
             </button>
 
-            <Link href="/signup" className="w-full">
+            <Link href="/register" className="w-full">
               <button className="w-full py-4 border-2 border-zinc-400 text-zinc-200 hover:bg-zinc-800 hover:text-white transition-all duration-200 uppercase font-bold text-xl">
                 NEW PLAYER
               </button>

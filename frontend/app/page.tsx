@@ -29,6 +29,7 @@ export default function Home() {
             </p>
 
             <div className="flex flex-col gap-3">
+              {/* 메인 진입 CTA: 로그인 페이지로 이동 */}
               <Link href="/login" className="w-full">
                 <button className="mono-btn w-full px-8 py-5 text-left">
                   <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">Primary Action</p>
@@ -37,7 +38,8 @@ export default function Home() {
                 </button>
               </Link>
 
-              <Link href="/signup" className="w-full">
+              {/* 신규 사용자 회원가입 이동 */}
+              <Link href="/register" className="w-full">
                 <button className="w-full border border-white/25 bg-white/5 px-8 py-4 text-left transition hover:border-white/60 hover:bg-white/10">
                   <p className="text-sm font-medium uppercase tracking-[0.14em] text-zinc-200">Create New Account</p>
                 </button>

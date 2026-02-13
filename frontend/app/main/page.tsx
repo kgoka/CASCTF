@@ -16,11 +16,13 @@ export default function MainPage() {
   const categories = ["OSINT", "Web", "Forensics", "Pwn", "Reversing", "Network"];
 
   useEffect(() => {
+    // 테마 로드: localStorage 저장값 우선, 없으면 dark
     const savedTheme = localStorage.getItem("casctf_theme");
     const initialTheme = savedTheme === "light" ? "light" : "dark";
     setTheme(initialTheme);
     document.documentElement.setAttribute("data-theme", initialTheme);
 
+    // 서버 세션(JWT 쿠키) 기준으로 현재 로그인 사용자 조회
     const loadMe = async () => {
       try {
         const res = await fetch(`${apiBaseUrl}/api/auth/me`, {
@@ -46,6 +48,7 @@ export default function MainPage() {
   const isAdmin = authUser?.role === "admin";
 
   const toggleTheme = () => {
+    // 테마 토글 + 로컬 저장 + 즉시 반영
     setTheme((prev) => {
       const next = prev === "dark" ? "light" : "dark";
       localStorage.setItem("casctf_theme", next);
@@ -70,6 +73,7 @@ export default function MainPage() {
           <button className="mono-btn rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em]">
             Notification
           </button>
+          {/* 관리자 계정일 때만 노출되는 관리 버튼 */}
           {isAdmin && (
             <Link
               href="/admin"

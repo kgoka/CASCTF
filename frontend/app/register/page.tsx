@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-export default function Signup() {
+export default function RegisterPage() {
   const apiBaseUrl =
     (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
   const [username, setUsername] = useState("");
@@ -13,9 +13,10 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleSignup = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // 프론트 1차 검증: 비밀번호 확인 일치 여부
     if (password !== confirm) {
       alert("Passwords do not match.");
       return;
@@ -23,6 +24,7 @@ export default function Signup() {
 
     try {
       setLoading(true);
+      // 회원가입 요청
       const res = await fetch(`${apiBaseUrl}/api/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -30,6 +32,7 @@ export default function Signup() {
       });
 
       if (res.ok) {
+        // 회원가입 성공 시 로그인 페이지로 유도
         alert("Sign up successful. Please log in.");
         router.push("/login");
       } else {
@@ -37,7 +40,7 @@ export default function Signup() {
         alert(data?.detail ?? "Sign up failed");
       }
     } catch (error) {
-      console.error("signup failed:", error);
+      console.error("register failed:", error);
       alert(`Cannot reach backend. Check API URL (${apiBaseUrl}) and backend server status.`);
     } finally {
       setLoading(false);
@@ -52,7 +55,7 @@ export default function Signup() {
 
       <div className="relative z-10 w-full max-w-lg">
         <div className="mb-4 flex items-center justify-between text-[10px] tracking-widest uppercase text-zinc-500">
-          <span>CASPER_AUTH::SIGNUP</span>
+          <span>CASPER_AUTH::REGISTER</span>
           <span>Secure Link: OK</span>
         </div>
 
@@ -64,7 +67,7 @@ export default function Signup() {
             </p>
           </div>
 
-          <form onSubmit={handleSignup} className="space-y-4">
+          <form onSubmit={handleRegister} className="space-y-4">
             <div className="space-y-2">
               <label className="text-xs text-zinc-400 tracking-widest uppercase">Player ID</label>
               <input

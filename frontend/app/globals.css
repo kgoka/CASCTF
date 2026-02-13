@@ -1,6 +1,7 @@
 ﻿@import "tailwindcss";
 
 :root {
+  /* 기본 다크 테마 컬러 토큰 */
   --bg-0: #050505;
   --bg-1: #0d0d0d;
   --bg-2: #141414;
@@ -12,6 +13,7 @@
 }
 
 :root[data-theme="light"] {
+  /* 라이트 테마 컬러 토큰 (data-theme 속성으로 전환) */
   --bg-0: #ececec;
   --bg-1: #f5f5f5;
   --bg-2: #ffffff;
@@ -33,6 +35,7 @@ body {
 }
 
 body {
+  /* 전체 앱 공통 배경 그라디언트 */
   color: var(--fg-0);
   background:
     radial-gradient(circle at 15% 12%, rgba(255, 255, 255, 0.09), transparent 32%),
@@ -51,6 +54,7 @@ body {
 }
 
 .frame {
+  /* 카드/패널 공통 컨테이너 스타일 */
   border: 1px solid var(--line);
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0));
   backdrop-filter: blur(4px);
@@ -69,6 +73,7 @@ body {
 }
 
 .mono-btn {
+  /* 공통 버튼 스타일 */
   border: 1px solid var(--line-strong);
   background: rgba(255, 255, 255, 0.03);
   color: var(--fg-0);
@@ -92,6 +97,7 @@ body {
 }
 
 .mono-input {
+  /* 공통 입력 필드 스타일 */
   width: 100%;
   border: 1px solid var(--line);
   background: rgba(0, 0, 0, 0.35);
@@ -110,6 +116,7 @@ body {
 }
 
 .ghost-mascot {
+  /* 테마 토글용 마스코트 버튼 */
   appearance: none;
   cursor: pointer;
   display: inline-flex;

@@ -2,6 +2,7 @@
   return (
     <main className="min-h-screen flex items-center justify-center p-8">
       <div className="frame w-full max-w-3xl p-8">
+        {/* TODO: 관리자 전용 기능(CTF 설정/문제 CRUD/로그 조회) 구현 예정 */}
         <h1 className="text-3xl font-semibold text-zinc-100">Admin Console</h1>
         <p className="mt-3 text-zinc-400">
           어드민페이지만들어야합니다.

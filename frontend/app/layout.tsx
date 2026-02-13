@@ -20,6 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${primaryFont.variable} bg-black text-zinc-100 antialiased`}>
+        {/* 전체 페이지 공통 배경 노이즈 레이어 */}
         <div className="noise" />
         {children}
       </body>
