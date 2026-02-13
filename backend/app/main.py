@@ -9,6 +9,7 @@ from .db.session import engine
 from .routers import auth
 from . import models  # noqa: F401
 
+# 앱 시작 시 모델 메타데이터 기준으로 테이블 자동 생성
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
@@ -16,11 +17,13 @@ app = FastAPI()
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    # 디버깅용: 유효성 검증 실패 시 상세 에러와 요청 본문 출력
     print("[422 VALIDATION ERROR]", exc.errors())
     print("[BODY]", (await request.body()).decode("utf-8", errors="ignore"))
     return JSONResponse(status_code=422, content={"detail": exc.errors()})
 
 
+# 프론트엔드(로컬 개발 서버)에서 API 호출할 수 있도록 CORS 허용
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ALLOW_ORIGINS,
@@ -30,6 +33,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 인증 라우터(/api/auth/*) 등록
 app.include_router(auth.router)
 
 
