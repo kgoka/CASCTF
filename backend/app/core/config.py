@@ -3,6 +3,16 @@
 # 환경변수 미설정 시 로컬 SQLite를 기본 DB로 사용
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./casctf.db")
 
+# 기본 어드민 계정 (개발용)
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin1234")
+
+# JWT 설정
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "change-this-in-production")
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "180"))
+ACCESS_TOKEN_COOKIE_NAME = os.getenv("ACCESS_TOKEN_COOKIE_NAME", "casctf_access_token")
+
 # 로컬 개발 프론트엔드 허용 목록
 CORS_ALLOW_ORIGINS = [
     "http://localhost:3000",

@@ -1,12 +1,10 @@
-import type { Metadata } from "next";
-import { Press_Start_2P } from "next/font/google"; // 구글 폰트 가져오기
+﻿import type { Metadata } from "next";
+import { Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
-// 픽셀 폰트 설정
-const pixelFont = Press_Start_2P({ 
-  weight: "400", 
+const primaryFont = Space_Grotesk({
   subsets: ["latin"],
-  variable: "--font-pixel", // CSS 변수로 사용
+  variable: "--font-primary",
 });
 
 export const metadata: Metadata = {
@@ -21,7 +19,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${pixelFont.variable} font-sans bg-black text-green-500`}>
+      <body className={`${primaryFont.variable} bg-black text-zinc-100 antialiased`}>
+        <div className="noise" />
         {children}
       </body>
     </html>

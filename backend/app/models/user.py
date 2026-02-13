@@ -11,3 +11,5 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     # 평문 비밀번호 대신 해시값만 저장
     password_hash = Column(String)
+    # 권한 구분: player | admin
+    role = Column(String, nullable=False, default="player")

@@ -3,6 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from .bootstrap import ensure_admin_user, ensure_user_role_column
 from .core.config import CORS_ALLOW_ORIGINS, CORS_ALLOW_ORIGIN_REGEX
 from .db.base import Base
 from .db.session import engine
@@ -11,6 +12,9 @@ from . import models  # noqa: F401
 
 # 앱 시작 시 모델 메타데이터 기준으로 테이블 자동 생성
 Base.metadata.create_all(bind=engine)
+# 기존 DB 스키마 보정 및 기본 어드민 계정 생성
+ensure_user_role_column()
+ensure_admin_user()
 
 app = FastAPI()
 

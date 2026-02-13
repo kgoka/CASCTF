@@ -11,3 +11,16 @@ class UserCreate(BaseModel):
 class UserLogin(BaseModel):
     username: str
     password: str
+
+
+# 로그인 성공 응답 스키마
+class LoginResponse(BaseModel):
+    message: str
+    username: str
+    role: str
+
+
+# 현재 로그인 사용자 응답
+class CurrentUserResponse(BaseModel):
+    username: str
+    role: str

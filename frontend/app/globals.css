@@ -1,59 +1,339 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
-/* v4에서는 여기서 테마 설정을 합니다 */
-@theme {
-  /* layout.tsx에서 넘겨준 폰트 변수를 연결 */
-  --font-pixel: var(--font-pixel);
-  
-  /* 커스텀 색상 (네온 그린) */
-  --color-neon: #00ff41; 
+:root {
+  --bg-0: #050505;
+  --bg-1: #0d0d0d;
+  --bg-2: #141414;
+  --fg-0: #f8f8f8;
+  --fg-1: #d4d4d4;
+  --fg-2: #9b9b9b;
+  --line: rgba(255, 255, 255, 0.14);
+  --line-strong: rgba(255, 255, 255, 0.28);
 }
 
-/* --- 아래는 아까와 동일한 커스텀 효과 --- */
+:root[data-theme="light"] {
+  --bg-0: #ececec;
+  --bg-1: #f5f5f5;
+  --bg-2: #ffffff;
+  --fg-0: #161616;
+  --fg-1: #2f2f2f;
+  --fg-2: #616161;
+  --line: rgba(0, 0, 0, 0.14);
+  --line-strong: rgba(0, 0, 0, 0.26);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
 
 body {
-  background-color: #050505;
-  background-image: radial-gradient(circle at center, #111 0%, #000 100%);
-  overflow-x: hidden;
-  font-family: var(--font-pixel), monospace; /* 폰트 적용 */
+  color: var(--fg-0);
+  background:
+    radial-gradient(circle at 15% 12%, rgba(255, 255, 255, 0.09), transparent 32%),
+    radial-gradient(circle at 90% 85%, rgba(255, 255, 255, 0.08), transparent 28%),
+    linear-gradient(155deg, var(--bg-2) 0%, var(--bg-1) 42%, var(--bg-0) 100%);
+  transition: background 180ms ease, color 180ms ease;
 }
 
-/* 네온 텍스트 효과 */
-.neon-text {
-  text-shadow: 0 0 5px var(--color-neon), 0 0 10px var(--color-neon), 0 0 20px var(--color-neon);
-}
-
-/* 박스 네온 테두리 */
-.neon-border {
-  box-shadow: 0 0 10px var(--color-neon), inset 0 0 10px var(--color-neon);
-}
-
-/* 스캔라인 효과 */
-.scanlines {
-  background: linear-gradient(
-    to bottom,
-    rgba(255,255,255,0),
-    rgba(255,255,255,0) 50%,
-    rgba(0,0,0,0.2) 50%,
-    rgba(0,0,0,0.2)
-  );
-  background-size: 100% 4px;
+.noise {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  inset: 0;
   pointer-events: none;
-  z-index: 50;
+  opacity: 0.08;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.45) 0.45px, transparent 0.45px);
+  background-size: 3px 3px;
 }
 
-/* 깜빡임 애니메이션 */
-@keyframes flicker {
-  0% { opacity: 0.97; }
-  5% { opacity: 0.95; }
-  10% { opacity: 0.9; }
-  15% { opacity: 0.95; }
-  20% { opacity: 0.99; }
-  100% { opacity: 0.95; }
+.frame {
+  border: 1px solid var(--line);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0));
+  backdrop-filter: blur(4px);
 }
 
-.screen-flicker {
-  animation: flicker 0.15s infinite;
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 34px 34px;
+}
+
+.hero-title {
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 24px rgba(255, 255, 255, 0.24);
+}
+
+.mono-btn {
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--fg-0);
+  transition: all 160ms ease;
+}
+
+.mono-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.95);
+  color: #080808;
+}
+
+:root[data-theme="light"] .mono-btn {
+  background: rgba(0, 0, 0, 0.03);
+  color: #181818;
+}
+
+:root[data-theme="light"] .mono-btn:hover {
+  background: #121212;
+  color: #f5f5f5;
+}
+
+.mono-input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--fg-0);
+  padding: 0.9rem 1rem;
+}
+
+.mono-input::placeholder {
+  color: var(--fg-2);
+}
+
+.mono-input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.12);
+}
+
+.ghost-mascot {
+  appearance: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 9999px;
+  width: 2.5rem;
+  height: 2.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+  animation: ghost-float 2.2s ease-in-out infinite;
+}
+
+.ghost-mascot:hover {
+  animation-play-state: paused;
+  transform: translateY(-3px) scale(1.08) rotate(-5deg);
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35), 0 0 16px rgba(255, 255, 255, 0.35);
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.4));
+}
+
+.landing-rig {
+  position: relative;
+  isolation: isolate;
+}
+
+.landing-rig::before,
+.landing-rig::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  filter: blur(40px);
+  z-index: -1;
+}
+
+.landing-rig::before {
+  width: 340px;
+  height: 340px;
+  left: -80px;
+  top: -30px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.18), transparent 70%);
+  animation: drift 10s ease-in-out infinite;
+}
+
+.landing-rig::after {
+  width: 260px;
+  height: 260px;
+  right: -40px;
+  bottom: -20px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.14), transparent 70%);
+  animation: drift 12s ease-in-out infinite reverse;
+}
+
+.beam {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.12) 50%, transparent 64%);
+  background-size: 220% 100%;
+  animation: beam 6s linear infinite;
+  opacity: 0.45;
+}
+
+.reveal-up {
+  opacity: 0;
+  transform: translateY(14px);
+  animation: reveal-up 0.7s ease-out forwards;
+}
+
+.reveal-up.d2 {
+  animation-delay: 0.12s;
+}
+
+.reveal-up.d3 {
+  animation-delay: 0.24s;
+}
+
+.reveal-up.d4 {
+  animation-delay: 0.36s;
+}
+
+.pill {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--fg-1);
+}
+
+.cta-primary {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--fg-0);
+}
+
+.cta-primary::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -35%;
+  width: 30%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.5),
+    rgba(255, 255, 255, 0)
+  );
+  transform: skewX(-18deg);
+  animation: sweep 2.8s ease-in-out infinite;
+}
+
+.cta-primary:hover {
+  background: rgba(255, 255, 255, 0.95);
+  color: #0a0a0a;
+}
+
+.ticker {
+  overflow: hidden;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.ticker-track {
+  white-space: nowrap;
+  animation: ticker 26s linear infinite;
+}
+
+@keyframes reveal-up {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sweep {
+  0% {
+    left: -35%;
+  }
+  60% {
+    left: 120%;
+  }
+  100% {
+    left: 120%;
+  }
+}
+
+@keyframes ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes beam {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+@keyframes drift {
+  0% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(10px, -14px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes ghost-float {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+:root[data-theme="light"] body {
+  background:
+    radial-gradient(circle at 15% 12%, rgba(0, 0, 0, 0.05), transparent 32%),
+    radial-gradient(circle at 90% 85%, rgba(0, 0, 0, 0.05), transparent 28%),
+    linear-gradient(155deg, #ffffff 0%, #f4f4f4 42%, #eaeaea 100%);
+}
+
+:root[data-theme="light"] .frame {
+  background: linear-gradient(160deg, rgba(0, 0, 0, 0.03), rgba(0, 0, 0, 0));
+}
+
+:root[data-theme="light"] .text-zinc-100 {
+  color: #141414 !important;
+}
+
+:root[data-theme="light"] .text-zinc-200,
+:root[data-theme="light"] .text-zinc-300 {
+  color: #2f2f2f !important;
+}
+
+:root[data-theme="light"] .text-zinc-400,
+:root[data-theme="light"] .text-zinc-500 {
+  color: #5a5a5a !important;
+}
+
+:root[data-theme="light"] .border-white\/10 {
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+:root[data-theme="light"] .bg-white\/10 {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+:root[data-theme="light"] .hover\:bg-white\/\[0\.03\]:hover {
+  background-color: rgba(0, 0, 0, 0.04) !important;
 }
