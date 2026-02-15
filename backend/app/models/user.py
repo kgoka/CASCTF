@@ -13,3 +13,6 @@ class User(Base):
     password_hash = Column(String)
     # 권한 구분: player | admin
     role = Column(String, nullable=False, default="player")
+    # 누적 점수
+    score = Column(Integer, nullable=False, default=0)
+

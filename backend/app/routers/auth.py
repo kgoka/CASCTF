@@ -42,7 +42,7 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
 
     # 비밀번호는 반드시 해시로 저장
     hashed_password = pwd_context.hash(user.password)
-    new_user = User(username=user.username, password_hash=hashed_password, role="player")
+    new_user = User(username=user.username, password_hash=hashed_password, role="player", score=0)
     db.add(new_user)
     db.commit()
     return {"message": "Signup successful."}
@@ -66,15 +66,21 @@ def login(user: UserLogin, response: Response, db: Session = Depends(get_db)):
         path="/",
     )
 
-    return {"message": "Login successful.", "username": db_user.username, "role": db_user.role}
+    return {
+        "message": "Login successful.",
+        "username": db_user.username,
+        "role": db_user.role,
+        "score": db_user.score,
+    }
 
 
 @router.get("/me", response_model=CurrentUserResponse)
 def me(current_user: User = Depends(get_current_user)):
-    return {"username": current_user.username, "role": current_user.role}
+    return {"username": current_user.username, "role": current_user.role, "score": current_user.score}
 
 
 @router.post("/logout")
 def logout(response: Response):
     response.delete_cookie(key=ACCESS_TOKEN_COOKIE_NAME, path="/")
     return {"message": "Logged out."}
+

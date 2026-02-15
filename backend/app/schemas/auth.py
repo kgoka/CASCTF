@@ -18,9 +18,12 @@ class LoginResponse(BaseModel):
     message: str
     username: str
     role: str
+    score: int
 
 
 # 현재 로그인 사용자 응답
 class CurrentUserResponse(BaseModel):
     username: str
     role: str
+    score: int
+

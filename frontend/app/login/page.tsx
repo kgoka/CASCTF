@@ -35,6 +35,7 @@ export default function LoginPage() {
           JSON.stringify({
             username: data?.username ?? username,
             role: data?.role ?? ((data?.username ?? username) === "admin" ? "admin" : "player"),
+            score: typeof data?.score === "number" ? data.score : 0,
           })
         );
         // 로그인 성공 후 메인으로 이동 (역할/권한은 /api/auth/me로 조회)

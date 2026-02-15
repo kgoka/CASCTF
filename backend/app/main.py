@@ -3,17 +3,24 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .bootstrap import ensure_admin_user, ensure_user_role_column
+from .bootstrap import (
+    ensure_admin_user,
+    ensure_challenge_columns,
+    ensure_user_role_column,
+    ensure_user_score_column,
+)
 from .core.config import CORS_ALLOW_ORIGINS, CORS_ALLOW_ORIGIN_REGEX
 from .db.base import Base
 from .db.session import engine
-from .routers import auth
+from .routers import auth, challenge
 from . import models  # noqa: F401
 
 # 앱 시작 시 모델 메타데이터 기준으로 테이블 자동 생성
 Base.metadata.create_all(bind=engine)
 # 기존 DB 스키마 보정 및 기본 어드민 계정 생성
 ensure_user_role_column()
+ensure_user_score_column()
+ensure_challenge_columns()
 ensure_admin_user()
 
 app = FastAPI()
@@ -39,8 +46,11 @@ app.add_middleware(
 
 # 인증 라우터(/api/auth/*) 등록
 app.include_router(auth.router)
+# 챌린지 라우터(/api/challenges*) 등록
+app.include_router(challenge.router)
 
 
 @app.get("/")
 def read_root():
     return {"message": "CASCTF Backend is running!"}
+
