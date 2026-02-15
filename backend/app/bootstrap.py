@@ -49,6 +49,16 @@ def ensure_challenge_columns() -> None:
             conn.execute(
                 text("ALTER TABLE challenges ADD COLUMN difficulty VARCHAR NOT NULL DEFAULT 'NORMAL'")
             )
+        if "score_type" not in cols:
+            conn.execute(text("ALTER TABLE challenges ADD COLUMN score_type VARCHAR NOT NULL DEFAULT 'basic'"))
+        if "point" not in cols:
+            conn.execute(text("ALTER TABLE challenges ADD COLUMN point INTEGER NOT NULL DEFAULT 100"))
+        if "dynamic_min_point" not in cols:
+            conn.execute(
+                text("ALTER TABLE challenges ADD COLUMN dynamic_min_point INTEGER NOT NULL DEFAULT 100")
+            )
+        if "dynamic_decay" not in cols:
+            conn.execute(text("ALTER TABLE challenges ADD COLUMN dynamic_decay INTEGER NOT NULL DEFAULT 50"))
         if "flag" not in cols:
             conn.execute(text("ALTER TABLE challenges ADD COLUMN flag VARCHAR NOT NULL DEFAULT ''"))
         if "attachment_file_id" not in cols:
@@ -59,6 +69,27 @@ def ensure_challenge_columns() -> None:
             )
         if "docker_template_id" not in cols:
             conn.execute(text("ALTER TABLE challenges ADD COLUMN docker_template_id VARCHAR"))
+
+
+def ensure_challenge_solve_columns() -> None:
+    """기존 SQLite challenge_solves 테이블에 solved_at_ts 컬럼이 없으면 추가한다."""
+    inspector = inspect(engine)
+    if "challenge_solves" not in inspector.get_table_names():
+        return
+
+    cols = {col["name"] for col in inspector.get_columns("challenge_solves")}
+    if "solved_at_ts" in cols:
+        return
+
+    with engine.begin() as conn:
+        now_ts = conn.execute(text("SELECT CAST(strftime('%s','now') AS INTEGER)")).scalar() or 0
+        conn.execute(
+            text("ALTER TABLE challenge_solves ADD COLUMN solved_at_ts INTEGER NOT NULL DEFAULT 0")
+        )
+        conn.execute(
+            text("UPDATE challenge_solves SET solved_at_ts = :now_ts WHERE solved_at_ts = 0"),
+            {"now_ts": int(now_ts)},
+        )
 
 
 def ensure_app_config_columns() -> None:

@@ -14,6 +14,8 @@ type ChallengeItem = {
   difficulty: Difficulty;
   message: string;
   point: number;
+  dynamic_min_point: number;
+  dynamic_decay: number;
   state: ChallengeState;
   score_type: ScoreType;
   attachment_file_id: number | null;
@@ -61,6 +63,7 @@ export default function AdminChallengePage() {
   const [difficulty, setDifficulty] = useState<Difficulty>("NORMAL");
   const [message, setMessage] = useState("");
   const [point, setPoint] = useState("100");
+  const [dynamicMinPoint, setDynamicMinPoint] = useState("100");
   const [state, setState] = useState<ChallengeState>("Visible");
   const [flag, setFlag] = useState("");
 
@@ -148,6 +151,7 @@ export default function AdminChallengePage() {
     setDifficulty("NORMAL");
     setMessage("");
     setPoint("100");
+    setDynamicMinPoint("100");
     setState("Visible");
     setFlag("");
     setUploadFile(null);
@@ -172,6 +176,7 @@ export default function AdminChallengePage() {
     setDifficulty(item.difficulty ?? "NORMAL");
     setMessage(item.message);
     setPoint(String(item.point));
+    setDynamicMinPoint(String(item.dynamic_min_point ?? 100));
     setState(item.state);
     setFlag(item.flag ?? "");
     setUploadFile(null);
@@ -237,6 +242,16 @@ export default function AdminChallengePage() {
       return;
     }
 
+    let dynamicMinPointValue: number | null = null;
+    if (scoreType === "dynamic") {
+      const parsedDynamicMinPoint = Number(dynamicMinPoint);
+      if (!Number.isFinite(parsedDynamicMinPoint) || parsedDynamicMinPoint < 1) {
+        alert("Dynamic min point must be a number greater than or equal to 1.");
+        return;
+      }
+      dynamicMinPointValue = Math.min(pointValue, Math.floor(parsedDynamicMinPoint));
+    }
+
     if (!editingChallenge && !flag.trim()) {
       alert("Flag is required when creating a challenge.");
       return;
@@ -254,6 +269,7 @@ export default function AdminChallengePage() {
       message: string;
       point: number;
       score_type: ScoreType;
+      dynamic_min_point: number | null;
       state: ChallengeState;
       flag?: string;
       attachment_file_id: number | null;
@@ -266,6 +282,7 @@ export default function AdminChallengePage() {
       message: message.trim(),
       point: pointValue,
       score_type: scoreType,
+      dynamic_min_point: dynamicMinPointValue,
       state,
       attachment_file_id: attachmentFileId,
       docker_enabled: dockerEnabled,
@@ -617,6 +634,25 @@ export default function AdminChallengePage() {
                     className="mono-input rounded-lg"
                   />
                 </div>
+
+                {scoreType === "dynamic" && (
+                  <div>
+                    <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-400">
+                      Dynamic Min Point
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={dynamicMinPoint}
+                      onChange={(e) => setDynamicMinPoint(e.target.value)}
+                      placeholder="100"
+                      className="mono-input rounded-lg"
+                    />
+                    <p className="mt-2 text-xs text-zinc-500">
+                      Dynamic score will not drop below this value.
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-400">Flag</label>

@@ -1,4 +1,4 @@
-﻿from sqlalchemy import Column, Integer, UniqueConstraint
+from sqlalchemy import Column, Integer, UniqueConstraint
 
 from ..db.base import Base
 
@@ -10,4 +10,4 @@ class ChallengeSolve(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, nullable=False, index=True)
     challenge_id = Column(Integer, nullable=False, index=True)
-
+    solved_at_ts = Column(Integer, nullable=False, index=True)

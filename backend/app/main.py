@@ -6,14 +6,16 @@ from fastapi.responses import JSONResponse
 from .bootstrap import (
     ensure_admin_user,
     ensure_app_config_columns,
+    ensure_challenge_solve_columns,
     ensure_challenge_columns,
     ensure_user_role_column,
     ensure_user_score_column,
 )
 from .core.config import CORS_ALLOW_ORIGINS, CORS_ALLOW_ORIGIN_REGEX
 from .db.base import Base
-from .db.session import engine
-from .routers import auth, challenge, config
+from .db.session import SessionLocal, engine
+from .routers import auth, challenge, config, scoreboard
+from .services.scoring import recalculate_all_user_scores
 from . import models  # noqa: F401
 
 # 앱 시작 시 모델 메타데이터 기준으로 테이블 자동 생성
@@ -22,8 +24,11 @@ Base.metadata.create_all(bind=engine)
 ensure_user_role_column()
 ensure_user_score_column()
 ensure_challenge_columns()
+ensure_challenge_solve_columns()
 ensure_app_config_columns()
 ensure_admin_user()
+with SessionLocal() as db:
+    recalculate_all_user_scores(db)
 
 app = FastAPI()
 
@@ -52,6 +57,8 @@ app.include_router(auth.router)
 app.include_router(challenge.router)
 # 앱 설정 라우터(/api/config*) 등록
 app.include_router(config.router)
+# 스코어보드 라우터(/api/scoreboard*) 등록
+app.include_router(scoreboard.router)
 
 
 @app.get("/")

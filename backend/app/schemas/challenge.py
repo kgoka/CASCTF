@@ -26,6 +26,8 @@ class ChallengeCreate(BaseModel):
     message: str = Field(default="", max_length=2000)
     point: int = Field(ge=1, le=10000)
     score_type: ScoreType = "basic"
+    dynamic_min_point: Optional[int] = Field(default=None, ge=1, le=10000)
+    dynamic_decay: Optional[int] = Field(default=None, ge=1, le=10000)
     state: StateType = "Visible"
     flag: str = Field(min_length=1, max_length=200)
     attachment_file_id: Optional[int] = None
@@ -40,6 +42,8 @@ class ChallengeUpdate(BaseModel):
     message: str = Field(default="", max_length=2000)
     point: int = Field(ge=1, le=10000)
     score_type: ScoreType = "basic"
+    dynamic_min_point: Optional[int] = Field(default=None, ge=1, le=10000)
+    dynamic_decay: Optional[int] = Field(default=None, ge=1, le=10000)
     state: StateType = "Visible"
     flag: Optional[str] = Field(default=None, min_length=1, max_length=200)
     attachment_file_id: Optional[int] = None
@@ -55,6 +59,8 @@ class ChallengeResponse(BaseModel):
     message: str
     point: int
     score_type: ScoreType
+    dynamic_min_point: int
+    dynamic_decay: int
     state: StateType
     attachment_file_id: Optional[int] = None
     attachment_file_name: Optional[str] = None

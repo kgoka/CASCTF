@@ -43,6 +43,7 @@ from ..services.docker_runtime import (
     start_compose_project,
     stop_compose_project,
 )
+from ..services.scoring import normalize_dynamic_params, recalculate_all_user_scores
 from .auth import get_current_user
 
 router = APIRouter(prefix="/api/challenges", tags=["Challenges"])
@@ -116,6 +117,24 @@ def _validate_docker_template_payload(docker_enabled: bool, docker_template_id: 
             detail="Selected docker template has no detectable service port",
         )
     return normalized_template_id
+
+
+def _resolve_scoring_fields(
+    point: int,
+    score_type: str,
+    dynamic_min_point: int | None,
+    dynamic_decay: int | None,
+) -> tuple[int, int]:
+    min_point, decay = normalize_dynamic_params(
+        point=point,
+        dynamic_min_point=dynamic_min_point,
+        dynamic_decay=dynamic_decay,
+    )
+
+    if score_type == "basic":
+        # Keep dynamic min aligned with fixed score for basic mode.
+        return point, decay
+    return min_point, decay
 
 
 def _is_challenge_accessible_to_user(challenge: Challenge, current_user: User) -> bool:
@@ -343,6 +362,12 @@ def create_challenge(
     docker_template_id = _validate_docker_template_payload(
         payload.docker_enabled, payload.docker_template_id
     )
+    dynamic_min_point, dynamic_decay = _resolve_scoring_fields(
+        point=payload.point,
+        score_type=payload.score_type,
+        dynamic_min_point=payload.dynamic_min_point,
+        dynamic_decay=payload.dynamic_decay,
+    )
 
     new_item = Challenge(
         name=payload.name.strip(),
@@ -352,6 +377,8 @@ def create_challenge(
         point=payload.point,
         state=payload.state,
         score_type=payload.score_type,
+        dynamic_min_point=dynamic_min_point,
+        dynamic_decay=dynamic_decay,
         flag=payload.flag.strip(),
         attachment_file_id=payload.attachment_file_id,
         docker_enabled=payload.docker_enabled,
@@ -382,6 +409,12 @@ def update_challenge(
     docker_template_id = _validate_docker_template_payload(
         payload.docker_enabled, payload.docker_template_id
     )
+    dynamic_min_point, dynamic_decay = _resolve_scoring_fields(
+        point=payload.point,
+        score_type=payload.score_type,
+        dynamic_min_point=payload.dynamic_min_point,
+        dynamic_decay=payload.dynamic_decay,
+    )
 
     target.name = payload.name.strip()
     target.category = payload.category
@@ -389,6 +422,8 @@ def update_challenge(
     target.message = payload.message.strip()
     target.point = payload.point
     target.score_type = payload.score_type
+    target.dynamic_min_point = dynamic_min_point
+    target.dynamic_decay = dynamic_decay
     target.state = payload.state
     target.attachment_file_id = payload.attachment_file_id
     target.docker_enabled = payload.docker_enabled
@@ -397,6 +432,7 @@ def update_challenge(
         target.flag = payload.flag.strip()
 
     db.commit()
+    recalculate_all_user_scores(db)
     db.refresh(target)
     return _attach_file_names(db, [target])[0]
 
@@ -454,6 +490,7 @@ def delete_challenge(
             db.delete(attachment)
 
     db.commit()
+    recalculate_all_user_scores(db)
     return None
 
 
@@ -632,8 +669,12 @@ def submit_flag(
             "blood": None,
         }
 
-    solve = ChallengeSolve(user_id=current_user.id, challenge_id=challenge.id)
-    current_user.score += challenge.point
+    previous_total_score = current_user.score
+    solve = ChallengeSolve(
+        user_id=current_user.id,
+        challenge_id=challenge.id,
+        solved_at_ts=_now_ts(),
+    )
     db.add(solve)
 
     try:
@@ -649,12 +690,14 @@ def submit_flag(
             "blood": None,
         }
 
-    db.refresh(current_user)
-    solve_order = (
+    solve_count = (
         db.query(ChallengeSolve)
         .filter(ChallengeSolve.challenge_id == challenge.id)
         .count()
     )
+    recalculate_all_user_scores(db)
+    db.refresh(current_user)
+    solve_order = solve_count
     blood = None
     if solve_order == 1:
         blood = "first"
@@ -666,7 +709,7 @@ def submit_flag(
     return {
         "success": True,
         "message": "Correct flag.",
-        "awarded_point": challenge.point,
+        "awarded_point": max(0, current_user.score - previous_total_score),
         "total_score": current_user.score,
         "blood": blood,
     }

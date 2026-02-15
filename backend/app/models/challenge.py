@@ -11,6 +11,8 @@ class Challenge(Base):
     category = Column(String, nullable=False, index=True)
     message = Column(Text, nullable=False, default="")
     point = Column(Integer, nullable=False, default=100)
+    dynamic_min_point = Column(Integer, nullable=False, default=100)
+    dynamic_decay = Column(Integer, nullable=False, default=50)
     difficulty = Column(String, nullable=False, default="NORMAL")
     state = Column(String, nullable=False, default="Visible")
     score_type = Column(String, nullable=False, default="basic")

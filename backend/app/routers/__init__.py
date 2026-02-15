@@ -1,3 +1,3 @@
-from . import auth, challenge, config
+from . import auth, challenge, config, scoreboard
 
-__all__ = ["auth", "challenge", "config"]
+__all__ = ["auth", "challenge", "config", "scoreboard"]
