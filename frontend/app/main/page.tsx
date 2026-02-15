@@ -76,7 +76,7 @@ export default function MainPage() {
           {/* 관리자 계정일 때만 노출되는 관리 버튼 */}
           {isAdmin && (
             <Link
-              href="/admin"
+              href="/admin/statistics"
               className="rounded-lg border border-white/40 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-100 transition hover:bg-white hover:text-black"
             >
               Manage
