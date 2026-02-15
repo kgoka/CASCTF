@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export default function LoginPage() {
   const apiBaseUrl =
-    (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
+    (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000").replace(/\/$/, "");
   // 메인 화면에서 로그인 폼을 모달로 띄우기 위한 상태
   const [showLogin, setShowLogin] = useState(false);
   const [username, setUsername] = useState("");
@@ -28,6 +28,15 @@ export default function LoginPage() {
       });
 
       if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        // UI 표시용 최소 정보 저장 (권한 표시는 빠르게, 실제 인증은 JWT 쿠키 사용)
+        localStorage.setItem(
+          "casctf_auth_ui",
+          JSON.stringify({
+            username: data?.username ?? username,
+            role: data?.role ?? ((data?.username ?? username) === "admin" ? "admin" : "player"),
+          })
+        );
         // 로그인 성공 후 메인으로 이동 (역할/권한은 /api/auth/me로 조회)
         setShowLogin(false);
         router.push("/main");

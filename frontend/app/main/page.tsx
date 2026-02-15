@@ -10,7 +10,7 @@ type AuthUser = {
 
 export default function MainPage() {
   const apiBaseUrl =
-    (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
+    (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000").replace(/\/$/, "");
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const categories = ["OSINT", "Web", "Forensics", "Pwn", "Reversing", "Network"];
@@ -22,6 +22,16 @@ export default function MainPage() {
     setTheme(initialTheme);
     document.documentElement.setAttribute("data-theme", initialTheme);
 
+    // 첫 렌더에서 버튼 깜빡임 방지를 위해 UI 캐시 사용자 정보 우선 반영
+    const cachedAuth = localStorage.getItem("casctf_auth_ui");
+    if (cachedAuth) {
+      try {
+        setAuthUser(JSON.parse(cachedAuth) as AuthUser);
+      } catch {
+        localStorage.removeItem("casctf_auth_ui");
+      }
+    }
+
     // 서버 세션(JWT 쿠키) 기준으로 현재 로그인 사용자 조회
     const loadMe = async () => {
       try {
@@ -32,20 +42,22 @@ export default function MainPage() {
 
         if (!res.ok) {
           setAuthUser(null);
+          localStorage.removeItem("casctf_auth_ui");
           return;
         }
 
         const data = (await res.json()) as AuthUser;
         setAuthUser(data);
+        localStorage.setItem("casctf_auth_ui", JSON.stringify(data));
       } catch {
-        setAuthUser(null);
+        // 네트워크 오류 시에는 캐시된 UI 정보 유지
       }
     };
 
     void loadMe();
   }, [apiBaseUrl]);
 
-  const isAdmin = authUser?.role === "admin";
+  const isAdmin = authUser?.role === "admin" || authUser?.username === "admin";
 
   const toggleTheme = () => {
     // 테마 토글 + 로컬 저장 + 즉시 반영
