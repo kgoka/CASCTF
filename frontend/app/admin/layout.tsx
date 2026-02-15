@@ -53,7 +53,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   if (!ready) {
     return (
       <main className="min-h-screen p-6 md:p-10">
-        <section className="frame mx-auto w-full max-w-6xl rounded-xl px-5 py-4 text-sm text-zinc-400">
+        <section className="frame w-full rounded-xl px-5 py-4 text-sm text-zinc-400">
           Loading admin...
         </section>
       </main>
@@ -62,7 +62,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   return (
     <main className="min-h-screen p-6 md:p-10">
-      <header className="frame mx-auto flex w-full max-w-6xl flex-wrap items-center gap-2 px-4 py-3">
+      <header className="frame flex w-full flex-wrap items-center gap-2 px-4 py-3">
         {NAV_ITEMS.map((item) => (
           <Link
             key={item.href}
@@ -74,7 +74,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         ))}
       </header>
 
-      <section className="mx-auto mt-5 w-full max-w-6xl">{children}</section>
+      <section className="mt-5 w-full">{children}</section>
     </main>
   );
 }
