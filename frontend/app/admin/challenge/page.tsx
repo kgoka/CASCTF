@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 type Category = "OSINT" | "Web" | "Forensics" | "Pwn" | "Reversing" | "Network";
 type Difficulty = "NORMAL" | "HARD";
@@ -18,6 +18,8 @@ type ChallengeItem = {
   score_type: ScoreType;
   attachment_file_id: number | null;
   attachment_file_name?: string | null;
+  docker_enabled: boolean;
+  docker_template_id: string | null;
   flag: string;
 };
 
@@ -28,10 +30,16 @@ type UploadedChallengeFile = {
   file_size: number;
 };
 
+type DockerTemplateItem = {
+  template_id: string;
+  services: string[];
+  default_service: string | null;
+  default_container_port: number | null;
+};
+
 const CATEGORY_OPTIONS: Category[] = ["OSINT", "Web", "Forensics", "Pwn", "Reversing", "Network"];
 const DIFFICULTY_OPTIONS: Difficulty[] = ["NORMAL", "HARD"];
 const STATE_OPTIONS: ChallengeState[] = ["Visible", "Hidden"];
-const REGISTERED_DOCKER_IMAGES = ["ubuntu-ctf:latest", "kali-mini:v1", "debian-web:v2"];
 
 export default function AdminChallengePage() {
   const apiBaseUrl =
@@ -40,6 +48,7 @@ export default function AdminChallengePage() {
   const [inputKeyword, setInputKeyword] = useState("");
   const [searchKeyword, setSearchKeyword] = useState("");
   const [challenges, setChallenges] = useState<ChallengeItem[]>([]);
+  const [dockerTemplates, setDockerTemplates] = useState<DockerTemplateItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -61,8 +70,8 @@ export default function AdminChallengePage() {
   const [attachmentFileId, setAttachmentFileId] = useState<number | null>(null);
   const [attachmentFileName, setAttachmentFileName] = useState("");
 
-  const [selectedDockerImage, setSelectedDockerImage] = useState(REGISTERED_DOCKER_IMAGES[0]);
-  const [dockerImageLabel, setDockerImageLabel] = useState("");
+  const [dockerEnabled, setDockerEnabled] = useState(false);
+  const [selectedDockerTemplateId, setSelectedDockerTemplateId] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [deletingChallengeId, setDeletingChallengeId] = useState<number | null>(null);
@@ -75,36 +84,61 @@ export default function AdminChallengePage() {
     return challenges.filter((item) => item.name.toLowerCase().includes(keyword));
   }, [challenges, searchKeyword]);
 
-  const loadChallenges = async () => {
-    try {
-      setLoading(true);
-      setErrorMessage("");
+  const loadChallenges = useCallback(async () => {
+    const res = await fetch(`${apiBaseUrl}/api/challenges/admin`, {
+      method: "GET",
+      credentials: "include",
+    });
 
-      const res = await fetch(`${apiBaseUrl}/api/challenges/admin`, {
-        method: "GET",
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setErrorMessage(data?.detail ?? "Failed to load challenges.");
-        setChallenges([]);
-        return;
-      }
-
-      const data = (await res.json()) as ChallengeItem[];
-      setChallenges(data);
-    } catch {
-      setErrorMessage("Cannot reach backend server.");
-      setChallenges([]);
-    } finally {
-      setLoading(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data?.detail ?? "Failed to load challenges.");
     }
-  };
+
+    const data = (await res.json()) as ChallengeItem[];
+    setChallenges(data);
+  }, [apiBaseUrl]);
+
+  const loadDockerTemplates = useCallback(async () => {
+    const res = await fetch(`${apiBaseUrl}/api/challenges/docker/templates`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data?.detail ?? "Failed to load docker templates.");
+    }
+
+    const data = (await res.json()) as DockerTemplateItem[];
+    setDockerTemplates(data);
+  }, [apiBaseUrl]);
 
   useEffect(() => {
-    void loadChallenges();
-  }, [apiBaseUrl]);
+    const loadAll = async () => {
+      try {
+        setLoading(true);
+        setErrorMessage("");
+        await Promise.all([loadChallenges(), loadDockerTemplates()]);
+      } catch (err) {
+        if (err instanceof Error) {
+          setErrorMessage(err.message);
+        } else {
+          setErrorMessage("Cannot reach backend server.");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void loadAll();
+  }, [loadChallenges, loadDockerTemplates]);
+
+  useEffect(() => {
+    if (!selectedDockerTemplateId && dockerTemplates.length > 0) {
+      setSelectedDockerTemplateId(dockerTemplates[0].template_id);
+    }
+  }, [dockerTemplates, selectedDockerTemplateId]);
 
   const resetForm = () => {
     setEditingChallenge(null);
@@ -121,8 +155,8 @@ export default function AdminChallengePage() {
     setFileInputKey((prev) => prev + 1);
     setAttachmentFileId(null);
     setAttachmentFileName("");
-    setSelectedDockerImage(REGISTERED_DOCKER_IMAGES[0]);
-    setDockerImageLabel("");
+    setDockerEnabled(false);
+    setSelectedDockerTemplateId(dockerTemplates[0]?.template_id ?? "");
   };
 
   const openCreateModal = () => {
@@ -144,7 +178,8 @@ export default function AdminChallengePage() {
     setFileInputKey((prev) => prev + 1);
     setAttachmentFileId(item.attachment_file_id ?? null);
     setAttachmentFileName(item.attachment_file_name ?? "");
-    setDockerImageLabel("");
+    setDockerEnabled(Boolean(item.docker_enabled));
+    setSelectedDockerTemplateId(item.docker_template_id ?? dockerTemplates[0]?.template_id ?? "");
     setShowFormModal(true);
   };
 
@@ -188,10 +223,6 @@ export default function AdminChallengePage() {
     }
   };
 
-  const handleSelectDockerImage = () => {
-    setDockerImageLabel(selectedDockerImage);
-  };
-
   const handleSubmitChallenge = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -211,6 +242,11 @@ export default function AdminChallengePage() {
       return;
     }
 
+    if (dockerEnabled && !selectedDockerTemplateId) {
+      alert("Select docker template.");
+      return;
+    }
+
     const payload: {
       name: string;
       category: Category;
@@ -221,6 +257,8 @@ export default function AdminChallengePage() {
       state: ChallengeState;
       flag?: string;
       attachment_file_id: number | null;
+      docker_enabled: boolean;
+      docker_template_id: string | null;
     } = {
       name: name.trim(),
       category,
@@ -230,6 +268,8 @@ export default function AdminChallengePage() {
       score_type: scoreType,
       state,
       attachment_file_id: attachmentFileId,
+      docker_enabled: dockerEnabled,
+      docker_template_id: dockerEnabled ? selectedDockerTemplateId : null,
     };
 
     if (flag.trim()) {
@@ -348,6 +388,7 @@ export default function AdminChallengePage() {
                 <th className="px-4 py-3">Difficulty</th>
                 <th className="px-4 py-3">Point</th>
                 <th className="px-4 py-3">File</th>
+                <th className="px-4 py-3">Docker</th>
                 <th className="px-4 py-3">State</th>
                 <th className="px-4 py-3">Actions</th>
               </tr>
@@ -362,6 +403,9 @@ export default function AdminChallengePage() {
                     <td className="px-4 py-3 text-zinc-300">{item.difficulty}</td>
                     <td className="px-4 py-3 text-zinc-300">{item.point}</td>
                     <td className="px-4 py-3 text-zinc-300">{item.attachment_file_name ?? "-"}</td>
+                    <td className="px-4 py-3 text-zinc-300">
+                      {item.docker_enabled ? item.docker_template_id ?? "Enabled" : "-"}
+                    </td>
                     <td className="px-4 py-3 text-zinc-300">{item.state}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -387,7 +431,7 @@ export default function AdminChallengePage() {
 
               {loading && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-zinc-500">
+                  <td colSpan={9} className="px-4 py-10 text-center text-zinc-500">
                     Loading challenges...
                   </td>
                 </tr>
@@ -395,7 +439,7 @@ export default function AdminChallengePage() {
 
               {!loading && filteredChallenges.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-zinc-500">
+                  <td colSpan={9} className="px-4 py-10 text-center text-zinc-500">
                     No challenges found.
                   </td>
                 </tr>
@@ -460,30 +504,37 @@ export default function AdminChallengePage() {
                 <p className="mt-2 text-xs text-zinc-500">{attachmentFileName || "No uploaded file selected"}</p>
               </div>
 
-              <div className="mt-6">
-                <p className="text-xs uppercase tracking-[0.18em] text-zinc-400">Docker Image Selection</p>
+              <div className="mt-6 rounded-lg border border-white/10 bg-black/20 p-3">
+                <label className="flex items-center gap-2 text-xs uppercase tracking-[0.16em] text-zinc-300">
+                  <input
+                    type="checkbox"
+                    checked={dockerEnabled}
+                    onChange={(e) => setDockerEnabled(e.target.checked)}
+                    className="h-4 w-4 accent-emerald-400"
+                  />
+                  Enable Docker Server
+                </label>
                 <p className="mt-2 text-[11px] text-zinc-500">
-                  This is selection-only from registered images. It is not local file upload.
+                  When enabled, player gets isolated docker instance for 30 minutes.
                 </p>
-                <select
-                  value={selectedDockerImage}
-                  onChange={(e) => setSelectedDockerImage(e.target.value)}
-                  className="mono-input mt-3 rounded-lg"
-                >
-                  {REGISTERED_DOCKER_IMAGES.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={handleSelectDockerImage}
-                  className="mt-2 w-full rounded-lg border border-white/20 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-zinc-200 hover:bg-white/10"
-                >
-                  Select
-                </button>
-                <p className="mt-2 text-xs text-zinc-500">{dockerImageLabel || "No image selected"}</p>
+
+                <p className="mt-4 text-xs uppercase tracking-[0.18em] text-zinc-400">Docker Template</p>
+                {dockerTemplates.length > 0 ? (
+                  <select
+                    value={selectedDockerTemplateId}
+                    onChange={(e) => setSelectedDockerTemplateId(e.target.value)}
+                    disabled={!dockerEnabled}
+                    className="mono-input mt-2 rounded-lg disabled:opacity-50"
+                  >
+                    {dockerTemplates.map((item) => (
+                      <option key={item.template_id} value={item.template_id}>
+                        {item.template_id}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="mt-2 text-xs text-rose-200">No docker templates found under backend/docker.</p>
+                )}
               </div>
             </aside>
 
@@ -602,6 +653,3 @@ export default function AdminChallengePage() {
     </div>
   );
 }
-
-
-

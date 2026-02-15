@@ -14,6 +14,22 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin1234")
 CHALLENGE_UPLOAD_DIR = os.path.abspath(
     os.getenv("CHALLENGE_UPLOAD_DIR", str((BASE_DIR / "uploads" / "challenges").as_posix()))
 )
+# 도커 문제 템플릿 루트 경로 (기본: backend/docker)
+CHALLENGE_DOCKER_ROOT = os.path.abspath(
+    os.getenv("CHALLENGE_DOCKER_ROOT", str((BASE_DIR / "docker").as_posix()))
+)
+# 플레이어에게 노출할 접속 호스트 (기본: localhost)
+CHALLENGE_INSTANCE_HOST = os.getenv("CHALLENGE_INSTANCE_HOST", "127.0.0.1")
+# 문제 인스턴스 TTL (기본: 30분)
+CHALLENGE_INSTANCE_TTL_SECONDS = int(os.getenv("CHALLENGE_INSTANCE_TTL_SECONDS", "1800"))
+# 문제 인스턴스 호스트 포트 풀 (기본: 15000~20000)
+CHALLENGE_INSTANCE_PORT_MIN = int(os.getenv("CHALLENGE_INSTANCE_PORT_MIN", "15000"))
+CHALLENGE_INSTANCE_PORT_MAX = int(os.getenv("CHALLENGE_INSTANCE_PORT_MAX", "20000"))
+if CHALLENGE_INSTANCE_PORT_MIN > CHALLENGE_INSTANCE_PORT_MAX:
+    CHALLENGE_INSTANCE_PORT_MIN = 15000
+    CHALLENGE_INSTANCE_PORT_MAX = 20000
+# docker CLI context (비워두면 시스템 기본 context 사용)
+CHALLENGE_DOCKER_CONTEXT = os.getenv("CHALLENGE_DOCKER_CONTEXT", "").strip()
 
 # JWT 설정
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "change-this-in-production")

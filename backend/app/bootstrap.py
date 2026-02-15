@@ -53,6 +53,12 @@ def ensure_challenge_columns() -> None:
             conn.execute(text("ALTER TABLE challenges ADD COLUMN flag VARCHAR NOT NULL DEFAULT ''"))
         if "attachment_file_id" not in cols:
             conn.execute(text("ALTER TABLE challenges ADD COLUMN attachment_file_id INTEGER"))
+        if "docker_enabled" not in cols:
+            conn.execute(
+                text("ALTER TABLE challenges ADD COLUMN docker_enabled BOOLEAN NOT NULL DEFAULT 0")
+            )
+        if "docker_template_id" not in cols:
+            conn.execute(text("ALTER TABLE challenges ADD COLUMN docker_template_id VARCHAR"))
 
 
 def ensure_app_config_columns() -> None:

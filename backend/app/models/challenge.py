@@ -1,4 +1,4 @@
-﻿from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy import Boolean, Column, Integer, String, Text
 
 from ..db.base import Base
 
@@ -18,4 +18,7 @@ class Challenge(Base):
     flag = Column(String, nullable=False, default="")
     # 업로드 파일 ID (challenge_files.id)
     attachment_file_id = Column(Integer, nullable=True)
-
+    # 도커 기반 문제 여부
+    docker_enabled = Column(Boolean, nullable=False, default=False)
+    # backend/docker/{docker_template_id}/docker-compose.yml 템플릿 식별자
+    docker_template_id = Column(String, nullable=True)
