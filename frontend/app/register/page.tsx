@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -16,7 +16,6 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 프론트 1차 검증: 비밀번호 확인 일치 여부
     if (password !== confirm) {
       alert("Passwords do not match.");
       return;
@@ -24,7 +23,6 @@ export default function RegisterPage() {
 
     try {
       setLoading(true);
-      // 회원가입 요청
       const res = await fetch(`${apiBaseUrl}/api/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -32,7 +30,6 @@ export default function RegisterPage() {
       });
 
       if (res.ok) {
-        // 회원가입 성공 시 로그인 페이지로 유도
         alert("Sign up successful. Please log in.");
         router.push("/login");
       } else {

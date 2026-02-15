@@ -1,21 +1,25 @@
 ﻿import os
 from pathlib import Path
+from datetime import datetime, timezone
 from typing import List
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import FileResponse
+from sqlalchemy import case
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..core.config import CHALLENGE_UPLOAD_DIR
 from ..db.session import get_db
+from ..models.app_config import AppConfig
 from ..models.challenge import Challenge
 from ..models.challenge_file import ChallengeFile
 from ..models.challenge_solve import ChallengeSolve
 from ..models.user import User
 from ..schemas.challenge import (
     ChallengeCreate,
+    ChallengeAdminResponse,
     ChallengeFileResponse,
     ChallengeResponse,
     ChallengeUpdate,
@@ -25,6 +29,14 @@ from ..schemas.challenge import (
 from .auth import get_current_user
 
 router = APIRouter(prefix="/api/challenges", tags=["Challenges"])
+
+
+def _difficulty_order():
+    return case(
+        (Challenge.difficulty == "NORMAL", 0),
+        (Challenge.difficulty == "HARD", 1),
+        else_=2,
+    )
 
 
 def _attach_file_names(db: Session, items: List[Challenge]) -> List[Challenge]:
@@ -48,18 +60,29 @@ def _validate_attachment_file(db: Session, attachment_file_id: int | None) -> No
         raise HTTPException(status_code=400, detail="Attachment file not found")
 
 
+def _is_ctf_running(db: Session) -> bool:
+    cfg = db.query(AppConfig).filter(AppConfig.id == 1).first()
+    if not cfg:
+        return False
+    if cfg.duration_start_ts is None or cfg.duration_end_ts is None:
+        return False
+
+    now_ts = int(datetime.now(timezone.utc).timestamp())
+    return cfg.duration_start_ts <= now_ts < cfg.duration_end_ts
+
+
 @router.get("", response_model=List[ChallengeResponse])
 def list_visible_challenges(db: Session = Depends(get_db)):
     items = (
         db.query(Challenge)
         .filter(Challenge.state == "Visible")
-        .order_by(Challenge.id.asc())
+        .order_by(_difficulty_order().asc(), Challenge.id.asc())
         .all()
     )
     return _attach_file_names(db, items)
 
 
-@router.get("/admin", response_model=List[ChallengeResponse])
+@router.get("/admin", response_model=List[ChallengeAdminResponse])
 def list_all_challenges(
     db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
@@ -68,6 +91,19 @@ def list_all_challenges(
 
     items = db.query(Challenge).order_by(Challenge.id.asc()).all()
     return _attach_file_names(db, items)
+
+
+@router.get("/solved/me", response_model=List[int])
+def list_my_solved_challenge_ids(
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+):
+    rows = (
+        db.query(ChallengeSolve.challenge_id)
+        .filter(ChallengeSolve.user_id == current_user.id)
+        .order_by(ChallengeSolve.id.asc())
+        .all()
+    )
+    return [row[0] for row in rows]
 
 
 @router.post("/files", response_model=ChallengeFileResponse, status_code=201)
@@ -104,7 +140,7 @@ async def upload_challenge_file(
     return saved
 
 
-@router.post("", response_model=ChallengeResponse, status_code=201)
+@router.post("", response_model=ChallengeAdminResponse, status_code=201)
 def create_challenge(
     payload: ChallengeCreate,
     db: Session = Depends(get_db),
@@ -118,6 +154,7 @@ def create_challenge(
     new_item = Challenge(
         name=payload.name.strip(),
         category=payload.category,
+        difficulty=payload.difficulty,
         message=payload.message.strip(),
         point=payload.point,
         state=payload.state,
@@ -132,7 +169,7 @@ def create_challenge(
     return _attach_file_names(db, [new_item])[0]
 
 
-@router.put("/{challenge_id}", response_model=ChallengeResponse)
+@router.put("/{challenge_id}", response_model=ChallengeAdminResponse)
 def update_challenge(
     challenge_id: int,
     payload: ChallengeUpdate,
@@ -150,6 +187,7 @@ def update_challenge(
 
     target.name = payload.name.strip()
     target.category = payload.category
+    target.difficulty = payload.difficulty
     target.message = payload.message.strip()
     target.point = payload.point
     target.score_type = payload.score_type
@@ -161,6 +199,52 @@ def update_challenge(
     db.commit()
     db.refresh(target)
     return _attach_file_names(db, [target])[0]
+
+
+@router.delete("/{challenge_id}", status_code=204)
+def delete_challenge(
+    challenge_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+
+    target = db.query(Challenge).filter(Challenge.id == challenge_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="Challenge not found")
+
+    attachment_file_id = target.attachment_file_id
+    has_other_attachment_reference = False
+    if attachment_file_id is not None:
+        has_other_attachment_reference = (
+            db.query(Challenge)
+            .filter(
+                Challenge.attachment_file_id == attachment_file_id,
+                Challenge.id != challenge_id,
+            )
+            .first()
+            is not None
+        )
+
+    db.query(ChallengeSolve).filter(ChallengeSolve.challenge_id == challenge_id).delete(
+        synchronize_session=False
+    )
+    db.delete(target)
+
+    if attachment_file_id is not None and not has_other_attachment_reference:
+        attachment = db.query(ChallengeFile).filter(ChallengeFile.id == attachment_file_id).first()
+        if attachment:
+            save_path = os.path.join(CHALLENGE_UPLOAD_DIR, attachment.stored_name)
+            if os.path.exists(save_path):
+                try:
+                    os.remove(save_path)
+                except OSError:
+                    pass
+            db.delete(attachment)
+
+    db.commit()
+    return None
 
 
 @router.get("/{challenge_id}/file")
@@ -201,6 +285,9 @@ def submit_flag(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if not _is_ctf_running(db):
+        raise HTTPException(status_code=403, detail="CTF is not currently running.")
+
     challenge = db.query(Challenge).filter(Challenge.id == challenge_id).first()
     if not challenge:
         raise HTTPException(status_code=404, detail="Challenge not found")
@@ -225,6 +312,7 @@ def submit_flag(
             "message": "Already solved.",
             "awarded_point": 0,
             "total_score": current_user.score,
+            "blood": None,
         }
 
     if payload.flag.strip() != challenge.flag:
@@ -233,6 +321,7 @@ def submit_flag(
             "message": "Incorrect flag.",
             "awarded_point": 0,
             "total_score": current_user.score,
+            "blood": None,
         }
 
     solve = ChallengeSolve(user_id=current_user.id, challenge_id=challenge.id)
@@ -249,12 +338,28 @@ def submit_flag(
             "message": "Already solved.",
             "awarded_point": 0,
             "total_score": current_user.score,
+            "blood": None,
         }
 
     db.refresh(current_user)
+    solve_order = (
+        db.query(ChallengeSolve)
+        .filter(ChallengeSolve.challenge_id == challenge.id)
+        .count()
+    )
+    blood = None
+    if solve_order == 1:
+        blood = "first"
+    elif solve_order == 2:
+        blood = "second"
+    elif solve_order == 3:
+        blood = "third"
+
     return {
         "success": True,
         "message": "Correct flag.",
         "awarded_point": challenge.point,
         "total_score": current_user.score,
+        "blood": blood,
     }
+

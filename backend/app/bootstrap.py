@@ -37,7 +37,7 @@ def ensure_user_score_column() -> None:
 
 
 def ensure_challenge_columns() -> None:
-    """기존 SQLite challenges 테이블에 flag/attachment_file_id 컬럼이 없으면 추가한다."""
+    """기존 SQLite challenges 테이블에 필요한 컬럼이 없으면 추가한다."""
     inspector = inspect(engine)
     if "challenges" not in inspector.get_table_names():
         return
@@ -45,10 +45,28 @@ def ensure_challenge_columns() -> None:
     cols = {col["name"] for col in inspector.get_columns("challenges")}
 
     with engine.begin() as conn:
+        if "difficulty" not in cols:
+            conn.execute(
+                text("ALTER TABLE challenges ADD COLUMN difficulty VARCHAR NOT NULL DEFAULT 'NORMAL'")
+            )
         if "flag" not in cols:
             conn.execute(text("ALTER TABLE challenges ADD COLUMN flag VARCHAR NOT NULL DEFAULT ''"))
         if "attachment_file_id" not in cols:
             conn.execute(text("ALTER TABLE challenges ADD COLUMN attachment_file_id INTEGER"))
+
+
+def ensure_app_config_columns() -> None:
+    """기존 SQLite app_config 테이블에 duration 컬럼이 없으면 추가한다."""
+    inspector = inspect(engine)
+    if "app_config" not in inspector.get_table_names():
+        return
+
+    cols = {col["name"] for col in inspector.get_columns("app_config")}
+    with engine.begin() as conn:
+        if "duration_start_ts" not in cols:
+            conn.execute(text("ALTER TABLE app_config ADD COLUMN duration_start_ts INTEGER"))
+        if "duration_end_ts" not in cols:
+            conn.execute(text("ALTER TABLE app_config ADD COLUMN duration_end_ts INTEGER"))
 
 
 def ensure_admin_user() -> None:

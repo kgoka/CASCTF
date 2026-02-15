@@ -1,14 +1,19 @@
 ﻿import os
+from pathlib import Path
 
-# 환경변수 미설정 시 로컬 SQLite를 기본 DB로 사용
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./casctf.db")
+BASE_DIR = Path(__file__).resolve().parents[2]
+DEFAULT_SQLITE_PATH = BASE_DIR / "casctf.db"
+# 환경변수 미설정 시 backend/casctf.db를 기본 DB로 사용 (실행 위치와 무관)
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DEFAULT_SQLITE_PATH.as_posix()}")
 
 # 기본 어드민 계정 (개발용)
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin1234")
 
-# 업로드 파일 저장 경로
-CHALLENGE_UPLOAD_DIR = os.path.abspath(os.getenv("CHALLENGE_UPLOAD_DIR", "./uploads/challenges"))
+# 업로드 파일 저장 경로 (기본: backend/uploads/challenges)
+CHALLENGE_UPLOAD_DIR = os.path.abspath(
+    os.getenv("CHALLENGE_UPLOAD_DIR", str((BASE_DIR / "uploads" / "challenges").as_posix()))
+)
 
 # JWT 설정
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "change-this-in-production")
@@ -25,4 +30,3 @@ CORS_ALLOW_ORIGINS = [
 ]
 # localhost/127.0.0.1의 다른 포트도 허용 (예: 3001 등)
 CORS_ALLOW_ORIGIN_REGEX = r"https?://(localhost|127\.0\.0\.1):\d+"
-

@@ -1,7 +1,7 @@
-﻿from .challenge import Challenge
+from .app_config import AppConfig
+from .challenge import Challenge
 from .challenge_file import ChallengeFile
 from .challenge_solve import ChallengeSolve
 from .user import User
 
-__all__ = ["User", "Challenge", "ChallengeFile", "ChallengeSolve"]
-
+__all__ = ["User", "Challenge", "ChallengeFile", "ChallengeSolve", "AppConfig"]

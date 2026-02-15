@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type Category = "OSINT" | "Web" | "Forensics" | "Pwn" | "Reversing" | "Network";
+type Difficulty = "NORMAL" | "HARD";
 type ChallengeState = "Visible" | "Hidden";
 type ScoreType = "basic" | "dynamic";
 
@@ -10,12 +11,14 @@ type ChallengeItem = {
   id: number;
   name: string;
   category: Category;
+  difficulty: Difficulty;
   message: string;
   point: number;
   state: ChallengeState;
   score_type: ScoreType;
   attachment_file_id: number | null;
   attachment_file_name?: string | null;
+  flag: string;
 };
 
 type UploadedChallengeFile = {
@@ -26,6 +29,7 @@ type UploadedChallengeFile = {
 };
 
 const CATEGORY_OPTIONS: Category[] = ["OSINT", "Web", "Forensics", "Pwn", "Reversing", "Network"];
+const DIFFICULTY_OPTIONS: Difficulty[] = ["NORMAL", "HARD"];
 const STATE_OPTIONS: ChallengeState[] = ["Visible", "Hidden"];
 const REGISTERED_DOCKER_IMAGES = ["ubuntu-ctf:latest", "kali-mini:v1", "debian-web:v2"];
 
@@ -45,6 +49,7 @@ export default function AdminChallengePage() {
   const [scoreType, setScoreType] = useState<ScoreType>("basic");
   const [name, setName] = useState("");
   const [category, setCategory] = useState<Category>("Web");
+  const [difficulty, setDifficulty] = useState<Difficulty>("NORMAL");
   const [message, setMessage] = useState("");
   const [point, setPoint] = useState("100");
   const [state, setState] = useState<ChallengeState>("Visible");
@@ -60,6 +65,7 @@ export default function AdminChallengePage() {
   const [dockerImageLabel, setDockerImageLabel] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
+  const [deletingChallengeId, setDeletingChallengeId] = useState<number | null>(null);
 
   const filteredChallenges = useMemo(() => {
     const keyword = searchKeyword.trim().toLowerCase();
@@ -105,6 +111,7 @@ export default function AdminChallengePage() {
     setScoreType("basic");
     setName("");
     setCategory("Web");
+    setDifficulty("NORMAL");
     setMessage("");
     setPoint("100");
     setState("Visible");
@@ -128,10 +135,11 @@ export default function AdminChallengePage() {
     setScoreType(item.score_type);
     setName(item.name);
     setCategory(item.category);
+    setDifficulty(item.difficulty ?? "NORMAL");
     setMessage(item.message);
     setPoint(String(item.point));
     setState(item.state);
-    setFlag("");
+    setFlag(item.flag ?? "");
     setUploadFile(null);
     setFileInputKey((prev) => prev + 1);
     setAttachmentFileId(item.attachment_file_id ?? null);
@@ -206,6 +214,7 @@ export default function AdminChallengePage() {
     const payload: {
       name: string;
       category: Category;
+      difficulty: Difficulty;
       message: string;
       point: number;
       score_type: ScoreType;
@@ -215,6 +224,7 @@ export default function AdminChallengePage() {
     } = {
       name: name.trim(),
       category,
+      difficulty,
       message: message.trim(),
       point: pointValue,
       score_type: scoreType,
@@ -255,6 +265,33 @@ export default function AdminChallengePage() {
       alert("Cannot reach backend server.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteChallenge = async (item: ChallengeItem) => {
+    const confirmed = window.confirm(`Delete challenge "${item.name}"?`);
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingChallengeId(item.id);
+      const res = await fetch(`${apiBaseUrl}/api/challenges/${item.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data?.detail ?? "Failed to delete challenge.");
+        return;
+      }
+
+      await loadChallenges();
+    } catch {
+      alert("Cannot reach backend server.");
+    } finally {
+      setDeletingChallengeId(null);
     }
   };
 
@@ -308,10 +345,11 @@ export default function AdminChallengePage() {
                 <th className="px-4 py-3">Id</th>
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Category</th>
+                <th className="px-4 py-3">Difficulty</th>
                 <th className="px-4 py-3">Point</th>
                 <th className="px-4 py-3">File</th>
                 <th className="px-4 py-3">State</th>
-                <th className="px-4 py-3">Edit</th>
+                <th className="px-4 py-3">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -321,24 +359,35 @@ export default function AdminChallengePage() {
                     <td className="px-4 py-3 text-zinc-300">{item.id}</td>
                     <td className="px-4 py-3 text-zinc-100">{item.name}</td>
                     <td className="px-4 py-3 text-zinc-300">{item.category}</td>
+                    <td className="px-4 py-3 text-zinc-300">{item.difficulty}</td>
                     <td className="px-4 py-3 text-zinc-300">{item.point}</td>
                     <td className="px-4 py-3 text-zinc-300">{item.attachment_file_name ?? "-"}</td>
                     <td className="px-4 py-3 text-zinc-300">{item.state}</td>
                     <td className="px-4 py-3">
-                      <button
-                        type="button"
-                        onClick={() => openEditModal(item)}
-                        className="mono-btn rounded-md px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em]"
-                      >
-                        Edit
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(item)}
+                          className="mono-btn rounded-md px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em]"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          disabled={deletingChallengeId === item.id}
+                          onClick={() => void handleDeleteChallenge(item)}
+                          className="rounded-md border border-rose-300/60 bg-rose-500/15 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-rose-100 transition hover:bg-rose-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {deletingChallengeId === item.id ? "Deleting..." : "Delete"}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
 
               {loading && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-zinc-500">
+                  <td colSpan={8} className="px-4 py-10 text-center text-zinc-500">
                     Loading challenges...
                   </td>
                 </tr>
@@ -346,7 +395,7 @@ export default function AdminChallengePage() {
 
               {!loading && filteredChallenges.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-zinc-500">
+                  <td colSpan={8} className="px-4 py-10 text-center text-zinc-500">
                     No challenges found.
                   </td>
                 </tr>
@@ -451,7 +500,7 @@ export default function AdminChallengePage() {
                   />
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-3">
                   <div>
                     <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-400">Category</label>
                     <select
@@ -460,6 +509,20 @@ export default function AdminChallengePage() {
                       className="mono-input rounded-lg"
                     >
                       {CATEGORY_OPTIONS.map((item) => (
+                        <option key={item} value={item}>
+                          {item}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-xs uppercase tracking-[0.16em] text-zinc-400">Difficulty</label>
+                    <select
+                      value={difficulty}
+                      onChange={(e) => setDifficulty(e.target.value as Difficulty)}
+                      className="mono-input rounded-lg"
+                    >
+                      {DIFFICULTY_OPTIONS.map((item) => (
                         <option key={item} value={item}>
                           {item}
                         </option>
@@ -510,7 +573,7 @@ export default function AdminChallengePage() {
                     type="text"
                     value={flag}
                     onChange={(e) => setFlag(e.target.value)}
-                    placeholder={editingChallenge ? "Leave empty to keep existing flag" : "FLAG{...}"}
+                    placeholder="FLAG{...}"
                     className="mono-input rounded-lg"
                   />
                 </div>
@@ -539,5 +602,6 @@ export default function AdminChallengePage() {
     </div>
   );
 }
+
 
 

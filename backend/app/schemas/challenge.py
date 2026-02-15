@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 
 CategoryType = Literal["OSINT", "Web", "Forensics", "Pwn", "Reversing", "Network"]
+DifficultyType = Literal["NORMAL", "HARD"]
 StateType = Literal["Visible", "Hidden"]
 ScoreType = Literal["basic", "dynamic"]
 
@@ -21,6 +22,7 @@ class ChallengeFileResponse(BaseModel):
 class ChallengeCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     category: CategoryType
+    difficulty: DifficultyType = "NORMAL"
     message: str = Field(default="", max_length=2000)
     point: int = Field(ge=1, le=10000)
     score_type: ScoreType = "basic"
@@ -32,6 +34,7 @@ class ChallengeCreate(BaseModel):
 class ChallengeUpdate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     category: CategoryType
+    difficulty: DifficultyType = "NORMAL"
     message: str = Field(default="", max_length=2000)
     point: int = Field(ge=1, le=10000)
     score_type: ScoreType = "basic"
@@ -44,6 +47,7 @@ class ChallengeResponse(BaseModel):
     id: int
     name: str
     category: CategoryType
+    difficulty: DifficultyType
     message: str
     point: int
     score_type: ScoreType
@@ -55,6 +59,10 @@ class ChallengeResponse(BaseModel):
         orm_mode = True
 
 
+class ChallengeAdminResponse(ChallengeResponse):
+    flag: str
+
+
 class FlagSubmitRequest(BaseModel):
     flag: str = Field(min_length=1, max_length=200)
 
@@ -64,4 +72,4 @@ class FlagSubmitResponse(BaseModel):
     message: str
     awarded_point: int
     total_score: int
-
+    blood: Optional[Literal["first", "second", "third"]] = None

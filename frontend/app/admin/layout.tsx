@@ -1,9 +1,16 @@
- "use client";
+"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
+
+import {
+  DEFAULT_CTF_NAME,
+  getCachedCtfName,
+  loadAndCacheCtfName,
+  subscribeCtfName,
+} from "@/lib/ctf-name";
 
 const NAV_ITEMS = [
   { href: "/admin/statistics", label: "Statistics" },
@@ -20,6 +27,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const apiBaseUrl =
     (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000").replace(/\/$/, "");
   const [ready, setReady] = useState(false);
+  const [ctfName, setCtfName] = useState(DEFAULT_CTF_NAME);
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -50,6 +58,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     void checkAdmin();
   }, [apiBaseUrl, pathname, router]);
 
+  useEffect(() => {
+    setCtfName(getCachedCtfName());
+    const unsubscribe = subscribeCtfName(setCtfName);
+    void loadAndCacheCtfName(apiBaseUrl, "/api/config/public", "omit").then(setCtfName);
+    return unsubscribe;
+  }, [apiBaseUrl]);
+
   if (!ready) {
     return (
       <main className="min-h-screen p-6 md:p-10">
@@ -63,6 +78,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <main className="min-h-screen p-6 md:p-10">
       <header className="frame flex w-full flex-wrap items-center gap-2 px-4 py-3">
+        <Link
+          href="/main"
+          className="mr-4 text-base font-semibold uppercase tracking-[0.18em] text-zinc-200 transition hover:text-white"
+        >
+          {ctfName}
+        </Link>
         {NAV_ITEMS.map((item) => (
           <Link
             key={item.href}
@@ -78,4 +99,3 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     </main>
   );
 }
-

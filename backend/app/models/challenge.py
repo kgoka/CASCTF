@@ -11,6 +11,7 @@ class Challenge(Base):
     category = Column(String, nullable=False, index=True)
     message = Column(Text, nullable=False, default="")
     point = Column(Integer, nullable=False, default=100)
+    difficulty = Column(String, nullable=False, default="NORMAL")
     state = Column(String, nullable=False, default="Visible")
     score_type = Column(String, nullable=False, default="basic")
     # 정답 flag (관리자/서버에서만 사용)
