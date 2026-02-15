@@ -17,8 +17,8 @@ const NAV_ITEMS = [
   { href: "/admin/notifications", label: "Notifications" },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/scoreboard", label: "Scoreboard" },
+  { href: "/admin/config", label: "CONFIG" },
   { href: "/admin/challenge", label: "Challenge" },
-  { href: "/admin/config", label: "Config" },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

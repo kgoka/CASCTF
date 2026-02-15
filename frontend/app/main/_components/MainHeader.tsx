@@ -36,7 +36,7 @@ export function MainHeader({ ctfName, isAdmin, authUser, theme, onToggleTheme }:
         </button>
         {isAdmin && (
           <Link
-            href="/admin/statistics"
+            href="/admin/config"
             className="rounded-lg border border-white/40 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-100 transition hover:bg-white hover:text-black"
           >
             Manage
