@@ -45,7 +45,8 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-backend/docker/
+backend/docker/*
+!backend/docker/.gitkeep
 backend/uploads/
 backend/casctf.db
 casctf.db
