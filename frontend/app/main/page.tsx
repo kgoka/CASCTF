@@ -326,10 +326,12 @@ export default function MainPage() {
 
   useEffect(() => {
     let cancelled = false;
+    // Keep polling resilient even if backend ordering changes.
     const getMaxNotificationId = (items: NotificationItem[]) =>
       items.reduce((maxId, item) => Math.max(maxId, item.id), 0);
     const sortByIdAsc = (items: NotificationItem[]) => [...items].sort((left, right) => left.id - right.id);
     const sortByIdDesc = (items: NotificationItem[]) => [...items].sort((left, right) => right.id - left.id);
+    // Merge snapshot + incremental results by id to prevent duplicate count growth.
     const mergeNotifications = (prev: NotificationItem[], incoming: NotificationItem[]) => {
       const combined = sortByIdDesc([...incoming, ...prev]);
       const seen = new Set<number>();
@@ -361,6 +363,7 @@ export default function MainPage() {
         return;
       }
 
+      // Only unseen ids should trigger toast/alert and sound.
       const seenId = notificationSeenMaxRef.current;
       const unseen = itemsAscending.filter((item) => item.id > seenId);
       if (unseen.length === 0) {
@@ -415,7 +418,7 @@ export default function MainPage() {
           const latestId = getMaxNotificationId(snapshot);
           notificationLastFetchedIdRef.current = latestId;
 
-          // On first load, mark current latest as seen to avoid replaying old alerts.
+          // Mark current latest as seen to avoid replaying old notifications on initial load.
           if (!notificationSeenInitializedRef.current) {
             const raw = localStorage.getItem(notificationSeenKey);
             const parsed = raw ? Number(raw) : Number.NaN;
@@ -536,7 +539,7 @@ export default function MainPage() {
       return;
     }
     if (!flagInput.trim()) {
-      alert("Flag瑜??낅젰??二쇱꽭??");
+      alert("Flag를 입력해 주세요.");
       return;
     }
 
@@ -557,7 +560,7 @@ export default function MainPage() {
 
       const data = (await res.json()) as FlagSubmitResponse;
       setFlagResultMessage(
-        `${data.message} ${data.awarded_point > 0 ? `+${data.awarded_point}???띾뱷.` : ""}`.trim()
+        `${data.message} ${data.awarded_point > 0 ? `+${data.awarded_point}점 획득.` : ""}`.trim()
       );
 
       if (data.success) {
@@ -616,7 +619,7 @@ export default function MainPage() {
 
       const data = (await res.json()) as ChallengeServerAccessResponse;
       setServerAccess(data);
-      setServerMessage(data.reused ? "湲곗〈 ?몄뒪?댁뒪瑜??ъ궗?⑺빀?덈떎." : "???몄뒪?댁뒪瑜??앹꽦?덉뒿?덈떎.");
+      setServerMessage(data.reused ? "기존 인스턴스를 재사용합니다." : "새 인스턴스를 생성했습니다.");
     } catch {
       setServerAccess(null);
       setServerMessage("Cannot reach backend server.");

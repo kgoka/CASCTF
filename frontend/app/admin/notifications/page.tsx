@@ -98,6 +98,7 @@ export default function AdminNotificationsPage() {
           title: title.trim(),
           content: content.trim(),
           notice_type: noticeType,
+          // UI stores YES/NO for clarity, API expects boolean.
           play_sound: playSound === "YES",
         }),
       });
