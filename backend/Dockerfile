@@ -6,6 +6,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends docker-cli docker-compose && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY app ./app
 COPY __init__.py ./__init__.py
 COPY docker ./docker

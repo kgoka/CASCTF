@@ -15,6 +15,7 @@ services:
     volumes:
       - backend_data:/data
       - ./backend/docker:/app/docker
+      - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "8000:8000"
 
