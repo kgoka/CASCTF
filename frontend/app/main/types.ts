@@ -47,6 +47,18 @@ export type BloodEffect = {
   borderClassName: string;
 };
 
+export type NotificationType = "Toast" | "Alert";
+
+export type NotificationItem = {
+  id: number;
+  title: string;
+  content: string;
+  notice_type: NotificationType;
+  play_sound: boolean;
+  created_by: string;
+  created_ts: number;
+};
+
 export type PublicConfigResponse = {
   ctf_name: string;
   duration_start_ts: number | null;

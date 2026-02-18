@@ -9,10 +9,18 @@ type MainHeaderProps = {
   isAdmin: boolean;
   authUser: AuthUser | null;
   theme: "dark" | "light";
+  notificationCount: number;
   onToggleTheme: () => void;
 };
 
-export function MainHeader({ ctfName, isAdmin, authUser, theme, onToggleTheme }: MainHeaderProps) {
+export function MainHeader({
+  ctfName,
+  isAdmin,
+  authUser,
+  theme,
+  notificationCount,
+  onToggleTheme,
+}: MainHeaderProps) {
   return (
     <header className="frame mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-4">
       <div className="flex items-center gap-3">
@@ -31,9 +39,12 @@ export function MainHeader({ ctfName, isAdmin, authUser, theme, onToggleTheme }:
       </div>
 
       <div className="flex items-center gap-2">
-        <button className="mono-btn rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em]">
-          Notification
-        </button>
+        <Link
+          href="/notification"
+          className="mono-btn rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em]"
+        >
+          Notification {notificationCount > 0 ? `(${notificationCount})` : ""}
+        </Link>
         {isAdmin && (
           <Link
             href="/admin/config"

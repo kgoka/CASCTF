@@ -22,7 +22,7 @@ from .core.config import (
 )
 from .db.base import Base
 from .db.session import SessionLocal, engine
-from .routers import auth, challenge, config, scoreboard
+from .routers import auth, challenge, config, notification, scoreboard
 from .services.scoring import recalculate_all_user_scores
 from . import models  # noqa: F401
 
@@ -106,6 +106,8 @@ app.include_router(auth.router)
 app.include_router(challenge.router)
 # 앱 설정 라우터(/api/config*) 등록
 app.include_router(config.router)
+# 알림 라우터(/api/notifications*) 등록
+app.include_router(notification.router)
 # 스코어보드 라우터(/api/scoreboard*) 등록
 app.include_router(scoreboard.router)
 
