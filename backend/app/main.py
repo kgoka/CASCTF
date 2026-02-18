@@ -1,4 +1,8 @@
-﻿from fastapi import FastAPI, Request
+﻿import asyncio
+import logging
+from contextlib import suppress
+
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -11,7 +15,11 @@ from .bootstrap import (
     ensure_user_role_column,
     ensure_user_score_column,
 )
-from .core.config import CORS_ALLOW_ORIGINS, CORS_ALLOW_ORIGIN_REGEX
+from .core.config import (
+    CHALLENGE_INSTANCE_CLEANUP_INTERVAL_SECONDS,
+    CORS_ALLOW_ORIGINS,
+    CORS_ALLOW_ORIGIN_REGEX,
+)
 from .db.base import Base
 from .db.session import SessionLocal, engine
 from .routers import auth, challenge, config, scoreboard
@@ -31,6 +39,47 @@ with SessionLocal() as db:
     recalculate_all_user_scores(db)
 
 app = FastAPI()
+logger = logging.getLogger(__name__)
+_instance_cleanup_task: asyncio.Task | None = None
+
+
+def _run_instance_cleanup_once() -> None:
+    with SessionLocal() as db:
+        challenge._cleanup_expired_instances(db)
+
+
+async def _instance_cleanup_loop() -> None:
+    while True:
+        await asyncio.sleep(CHALLENGE_INSTANCE_CLEANUP_INTERVAL_SECONDS)
+        try:
+            _run_instance_cleanup_once()
+        except Exception:
+            logger.exception("Periodic challenge instance cleanup failed")
+
+
+@app.on_event("startup")
+async def start_instance_cleanup_loop() -> None:
+    global _instance_cleanup_task
+
+    try:
+        _run_instance_cleanup_once()
+    except Exception:
+        logger.exception("Initial challenge instance cleanup failed")
+
+    if _instance_cleanup_task is None or _instance_cleanup_task.done():
+        _instance_cleanup_task = asyncio.create_task(_instance_cleanup_loop())
+
+
+@app.on_event("shutdown")
+async def stop_instance_cleanup_loop() -> None:
+    global _instance_cleanup_task
+    if _instance_cleanup_task is None:
+        return
+
+    _instance_cleanup_task.cancel()
+    with suppress(asyncio.CancelledError):
+        await _instance_cleanup_task
+    _instance_cleanup_task = None
 
 
 @app.exception_handler(RequestValidationError)
@@ -64,4 +113,3 @@ app.include_router(scoreboard.router)
 @app.get("/")
 def read_root():
     return {"message": "CASCTF Backend is running!"}
-
