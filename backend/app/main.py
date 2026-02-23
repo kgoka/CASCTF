@@ -23,6 +23,7 @@ from .core.config import (
 from .db.base import Base
 from .db.session import SessionLocal, engine
 from .routers import auth, challenge, config, notification, scoreboard
+from .services.docker_runtime import cleanup_runtime_compose_artifacts
 from .services.scoring import recalculate_all_user_scores
 from . import models  # noqa: F401
 
@@ -53,6 +54,9 @@ def _run_instance_shutdown_cleanup() -> None:
         removed_count = challenge._cleanup_all_instances(db)
     if removed_count > 0:
         logger.info("Removed %d challenge instance(s) during shutdown cleanup", removed_count)
+    artifact_removed_count = cleanup_runtime_compose_artifacts()
+    if artifact_removed_count > 0:
+        logger.info("Removed %d runtime compose artifact file(s) during shutdown cleanup", artifact_removed_count)
 
 
 async def _instance_cleanup_loop() -> None:

@@ -17,6 +17,8 @@ from ..core.config import (
 )
 
 COMPOSE_FILENAME = "docker-compose.yml"
+RUNTIME_COMPOSE_PREFIX = ".casctf-"
+RUNTIME_COMPOSE_SUFFIX = ".yml"
 _SAFE_TEMPLATE_ID_RE = re.compile(r"^[a-zA-Z0-9_.-]+$")
 _SAFE_IMAGE_TOKEN_RE = re.compile(r"[^a-z0-9_.-]+")
 
@@ -411,6 +413,41 @@ def remove_runtime_compose_file(compose_file_path: Path) -> None:
         compose_file_path.unlink(missing_ok=True)
     except OSError:
         return
+
+
+def _runtime_project_name_from_compose_file(compose_file_path: Path) -> Optional[str]:
+    name = compose_file_path.name
+    if not name.startswith(RUNTIME_COMPOSE_PREFIX) or not name.endswith(RUNTIME_COMPOSE_SUFFIX):
+        return None
+    project_name = name[len(RUNTIME_COMPOSE_PREFIX) : -len(RUNTIME_COMPOSE_SUFFIX)]
+    return project_name or None
+
+
+def cleanup_runtime_compose_artifacts() -> int:
+    root = _docker_root()
+    if not root.exists() or not root.is_dir():
+        return 0
+
+    removed_count = 0
+    for template_dir in root.iterdir():
+        if not template_dir.is_dir():
+            continue
+
+        for compose_file in template_dir.glob(f"{RUNTIME_COMPOSE_PREFIX}*{RUNTIME_COMPOSE_SUFFIX}"):
+            if not compose_file.is_file():
+                continue
+
+            project_name = _runtime_project_name_from_compose_file(compose_file)
+            if project_name:
+                try:
+                    stop_compose_project(compose_file, project_name)
+                except RuntimeError:
+                    pass
+
+            remove_runtime_compose_file(compose_file)
+            removed_count += 1
+
+    return removed_count
 
 
 def generate_project_name(challenge_id: int, user_id: int) -> str:
