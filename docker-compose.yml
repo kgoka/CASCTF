@@ -8,7 +8,9 @@ services:
     environment:
       DATABASE_URL: sqlite:////data/casctf.db
       CHALLENGE_UPLOAD_DIR: /data/uploads/challenges
-      CHALLENGE_INSTANCE_HOST: localhost
+      CHALLENGE_INSTANCE_HOST: 144.24.72.17
+      CHALLENGE_INSTANCE_PORT_MIN: 55000
+      CHALLENGE_INSTANCE_PORT_MAX: 55025
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD: admin1234
       JWT_SECRET_KEY: change-this-in-production
