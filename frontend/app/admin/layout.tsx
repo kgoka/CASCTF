@@ -25,7 +25,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const apiBaseUrl =
-    (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001").replace(/\/$/, "");
+    (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/$/, "");
   const [ready, setReady] = useState(false);
   const [ctfName, setCtfName] = useState(DEFAULT_CTF_NAME);
 

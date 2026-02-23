@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export default function LoginPage() {
   const apiBaseUrl =
-    (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001").replace(/\/$/, "");
+    (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/$/, "");
   const [showLogin, setShowLogin] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");

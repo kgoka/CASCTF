@@ -28,7 +28,7 @@ function formatTs(ts: number): string {
 
 export default function AdminNotificationsPage() {
   const apiBaseUrl =
-    (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001").replace(/\/$/, "");
+    (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/$/, "");
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
