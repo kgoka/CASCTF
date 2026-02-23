@@ -168,6 +168,18 @@ def _cleanup_expired_instances(db: Session) -> None:
     db.commit()
 
 
+def _cleanup_all_instances(db: Session) -> int:
+    rows = db.query(ChallengeInstance).order_by(ChallengeInstance.id.asc()).all()
+    if not rows:
+        return 0
+
+    for instance in rows:
+        _stop_instance_runtime(instance)
+        db.delete(instance)
+    db.commit()
+    return len(rows)
+
+
 def _cleanup_user_other_instances(db: Session, user_id: int, keep_challenge_id: int) -> None:
     """한 사용자가 다른 문제 VM을 열면 기존 문제 VM은 정리한다."""
     rows = (

@@ -48,6 +48,13 @@ def _run_instance_cleanup_once() -> None:
         challenge._cleanup_expired_instances(db)
 
 
+def _run_instance_shutdown_cleanup() -> None:
+    with SessionLocal() as db:
+        removed_count = challenge._cleanup_all_instances(db)
+    if removed_count > 0:
+        logger.info("Removed %d challenge instance(s) during shutdown cleanup", removed_count)
+
+
 async def _instance_cleanup_loop() -> None:
     while True:
         await asyncio.sleep(CHALLENGE_INSTANCE_CLEANUP_INTERVAL_SECONDS)
@@ -73,13 +80,16 @@ async def start_instance_cleanup_loop() -> None:
 @app.on_event("shutdown")
 async def stop_instance_cleanup_loop() -> None:
     global _instance_cleanup_task
-    if _instance_cleanup_task is None:
-        return
+    if _instance_cleanup_task is not None:
+        _instance_cleanup_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await _instance_cleanup_task
+        _instance_cleanup_task = None
 
-    _instance_cleanup_task.cancel()
-    with suppress(asyncio.CancelledError):
-        await _instance_cleanup_task
-    _instance_cleanup_task = None
+    try:
+        _run_instance_shutdown_cleanup()
+    except Exception:
+        logger.exception("Shutdown challenge instance cleanup failed")
 
 
 @app.exception_handler(RequestValidationError)
