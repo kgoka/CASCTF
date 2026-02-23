@@ -219,6 +219,19 @@ def _to_server_access_payload(
     }
 
 
+def _is_port_allocation_error(exc: RuntimeError) -> bool:
+    message = str(exc).lower()
+    return "port is already allocated" in message or "bind for 0.0.0.0:" in message
+
+
+def _cleanup_failed_runtime_start(compose_file_path: Path, project_name: str) -> None:
+    try:
+        stop_compose_project(compose_file_path, project_name)
+    except RuntimeError:
+        pass
+    remove_runtime_compose_file(compose_file_path)
+
+
 def _provision_instance(db: Session, challenge: Challenge, current_user: User) -> ChallengeInstance:
     template_id = _normalize_docker_template_id(challenge.docker_template_id)
     if template_id is None:
@@ -239,38 +252,51 @@ def _provision_instance(db: Session, challenge: Challenge, current_user: User) -
         .filter(ChallengeInstance.expires_ts > _now_ts())
         .all()
     }
-    host_port = allocate_free_host_port(active_ports)
-    project_name = generate_project_name(challenge.id, current_user.id)
-    runtime_compose_path = build_runtime_compose_file(
-        template_id=template_id,
-        project_name=project_name,
-        service_name=service_name,
-        host_port=host_port,
-        container_port=container_port,
-    )
+    tried_ports = set(active_ports)
+    last_error: RuntimeError | None = None
+    max_attempts = 5
 
-    try:
-        start_compose_project(runtime_compose_path, project_name)
-    except RuntimeError as exc:
-        remove_runtime_compose_file(runtime_compose_path)
-        raise HTTPException(status_code=500, detail=f"Failed to start docker instance: {exc}") from exc
+    for _ in range(max_attempts):
+        host_port = allocate_free_host_port(tried_ports)
+        tried_ports.add(host_port)
+        project_name = generate_project_name(challenge.id, current_user.id)
+        runtime_compose_path = build_runtime_compose_file(
+            template_id=template_id,
+            project_name=project_name,
+            service_name=service_name,
+            host_port=host_port,
+            container_port=container_port,
+        )
 
-    now_ts = _now_ts()
-    instance = ChallengeInstance(
-        user_id=current_user.id,
-        challenge_id=challenge.id,
-        docker_project_name=project_name,
-        runtime_compose_path=str(runtime_compose_path),
-        service_name=service_name,
-        host_port=host_port,
-        container_port=container_port,
-        created_ts=now_ts,
-        expires_ts=now_ts + CHALLENGE_INSTANCE_TTL_SECONDS,
-    )
-    db.add(instance)
-    db.commit()
-    db.refresh(instance)
-    return instance
+        try:
+            start_compose_project(runtime_compose_path, project_name)
+        except RuntimeError as exc:
+            _cleanup_failed_runtime_start(runtime_compose_path, project_name)
+            last_error = exc
+            if _is_port_allocation_error(exc):
+                continue
+            raise HTTPException(status_code=500, detail=f"Failed to start docker instance: {exc}") from exc
+
+        now_ts = _now_ts()
+        instance = ChallengeInstance(
+            user_id=current_user.id,
+            challenge_id=challenge.id,
+            docker_project_name=project_name,
+            runtime_compose_path=str(runtime_compose_path),
+            service_name=service_name,
+            host_port=host_port,
+            container_port=container_port,
+            created_ts=now_ts,
+            expires_ts=now_ts + CHALLENGE_INSTANCE_TTL_SECONDS,
+        )
+        db.add(instance)
+        db.commit()
+        db.refresh(instance)
+        return instance
+
+    if last_error is None:
+        raise HTTPException(status_code=500, detail="Failed to start docker instance: no available port")
+    raise HTTPException(status_code=500, detail=f"Failed to start docker instance: {last_error}")
 
 
 @router.get("", response_model=List[ChallengeResponse])
