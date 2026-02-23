@@ -70,7 +70,7 @@ function playNotificationSound(): void {
 
 export default function MainPage() {
   const apiBaseUrl =
-    (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000").replace(/\/$/, "");
+    (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001").replace(/\/$/, "");
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [ctfName, setCtfName] = useState(DEFAULT_CTF_NAME);

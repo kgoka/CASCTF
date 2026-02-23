@@ -42,7 +42,7 @@ function toUnixSeconds(localValue: string): number | null {
 
 export default function AdminConfigPage() {
   const apiBaseUrl =
-    (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000").replace(/\/$/, "");
+    (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001").replace(/\/$/, "");
 
   const [category, setCategory] = useState<ConfigCategory>("general");
   const [ctfName, setCtfName] = useState(DEFAULT_CTF_NAME);

@@ -24,6 +24,6 @@ RUN pip install --upgrade pip && \
       "python-jose[cryptography]>=3.3" \
       "PyYAML>=6.0"
 
-EXPOSE 8000
+EXPOSE 3001
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "3001"]

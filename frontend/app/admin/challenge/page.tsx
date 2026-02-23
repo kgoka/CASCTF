@@ -45,7 +45,7 @@ const STATE_OPTIONS: ChallengeState[] = ["Visible", "Hidden"];
 
 export default function AdminChallengePage() {
   const apiBaseUrl =
-    (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000").replace(/\/$/, "");
+    (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001").replace(/\/$/, "");
 
   const [inputKeyword, setInputKeyword] = useState("");
   const [searchKeyword, setSearchKeyword] = useState("");
