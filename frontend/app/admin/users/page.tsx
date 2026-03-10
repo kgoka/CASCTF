@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation"; // 라우터 임포트
 
 // 백엔드에서 받아올 데이터의 형태
 interface User {
@@ -11,12 +12,12 @@ interface User {
 }
 
 export default function AdminUsersPage() {
+  const router = useRouter(); // 라우터 사용 설정
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 백엔드 API 포트(예: 8000)를 실제 환경에 맞게 확인해주세요.
     fetch("http://192.168.0.3:3000/api/auth/admin/users", {
       method: "GET",
       credentials: "include", // 쿠키(인증 토큰) 전송 필수
@@ -69,7 +70,11 @@ export default function AdminUsersPage() {
             </thead>
             <tbody>
               {users.map((user) => (
-                <tr key={user.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
+                <tr 
+                  key={user.id} 
+                  onClick={() => router.push(`/profile/${user.id}`)} 
+                  className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors cursor-pointer"
+                >
                   <td className="px-4 py-3">{user.id}</td>
                   <td className="px-4 py-3 font-medium text-zinc-100">{user.username}</td>
                   <td className="px-4 py-3">

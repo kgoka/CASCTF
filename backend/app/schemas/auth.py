@@ -35,3 +35,9 @@ class UserListResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class UserUpdateRequest(BaseModel):
+    username: str | None = None
+    role: str | None = None
+    score: int | None = None
+    password: str | None = None # 관리자가 비밀번호를 강제 변경할 때 사용
