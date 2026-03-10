@@ -1,12 +1,14 @@
 ﻿from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+from typing import List
 
 from ..core.config import ACCESS_TOKEN_COOKIE_NAME, ACCESS_TOKEN_EXPIRE_MINUTES
 from ..core.security import create_access_token, decode_access_token
 from ..db.session import get_db
 from ..models.user import User
-from ..schemas.auth import CurrentUserResponse, LoginResponse, UserCreate, UserLogin
+from ..schemas.auth import CurrentUserResponse, LoginResponse, UserCreate, UserLogin, UserListResponse
+
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 # 비밀번호 해시/검증 설정
@@ -84,3 +86,15 @@ def logout(response: Response):
     response.delete_cookie(key=ACCESS_TOKEN_COOKIE_NAME, path="/")
     return {"message": "Logged out."}
 
+@router.get("/admin/users", response_model=List[UserListResponse])
+def get_all_users_for_admin(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user) # 현재 로그인한 유저 정보 가져오기
+):
+    # 1. 관리자(admin) 권한이 맞는지 검증
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="관리자 권한이 없습니다.")
+
+    # 2. DB에서 전체 유저 조회 후 반환
+    users = db.query(User).all()
+    return users

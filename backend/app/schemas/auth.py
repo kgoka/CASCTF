@@ -27,3 +27,11 @@ class CurrentUserResponse(BaseModel):
     role: str
     score: int
 
+class UserListResponse(BaseModel):
+    id: int
+    username: str
+    role: str
+    score: int
+
+    class Config:
+        from_attributes = True
