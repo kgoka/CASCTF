@@ -18,9 +18,10 @@ export default function AdminUsersPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("http://192.168.0.3:3000/api/auth/admin/users", {
+    fetch("/api/auth/admin/users", {
       method: "GET",
-      credentials: "include", // 쿠키(인증 토큰) 전송 필수
+      credentials: "include",
+    })
     })
       .then(async (res) => {
         if (!res.ok) {

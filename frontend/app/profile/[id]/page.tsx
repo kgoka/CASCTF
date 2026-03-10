@@ -10,11 +10,12 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true);
 
   // 백엔드 주소 (현재 성공하신 3000 포트 또는 8000 포트 사용)
-  const API_URL = "http://192.168.0.3:3000/api/auth"; 
+  const API_URL = "/api/auth"; 
 
   useEffect(() => {
     // 유저 상세 정보 불러오기
     fetch(`${API_URL}/admin/users/${params.id}`, {
+      method: "GET",
       credentials: "include",
     })
       .then((res) => {
