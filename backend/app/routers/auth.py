@@ -7,7 +7,7 @@ from ..core.config import ACCESS_TOKEN_COOKIE_NAME, ACCESS_TOKEN_EXPIRE_MINUTES
 from ..core.security import create_access_token, decode_access_token
 from ..db.session import get_db
 from ..models.user import User
-from ..schemas.auth import CurrentUserResponse, LoginResponse, UserCreate, UserLogin, UserListResponse
+from ..schemas.auth import CurrentUserResponse, LoginResponse, UserCreate, UserLogin, UserListResponse, UserUpdateRequest
 
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
@@ -98,3 +98,63 @@ def get_all_users_for_admin(
     # 2. DB에서 전체 유저 조회 후 반환
     users = db.query(User).all()
     return users
+
+# 1. 특정 유저 상세 조회
+@router.get("/admin/users/{user_id}", response_model=UserListResponse)
+def get_user_detail(
+    user_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="관리자 권한이 없습니다.")
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
+    return user
+
+# 2. 특정 유저 정보 수정
+@router.patch("/admin/users/{user_id}")
+def update_user(
+    user_id: int, 
+    update_data: UserUpdateRequest, # 방금 만든 스키마
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="관리자 권한이 없습니다.")
+        
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
+
+    if update_data.username is not None:
+        user.username = update_data.username
+    if update_data.role is not None:
+        user.role = update_data.role
+    if update_data.score is not None:
+        user.score = update_data.score
+    if update_data.password is not None:
+        user.password_hash = pwd_context.hash(update_data.password)
+
+    db.commit()
+    return {"message": "유저 정보가 성공적으로 수정되었습니다."}
+
+# 3. 특정 유저 삭제
+@router.delete("/admin/users/{user_id}")
+def delete_user(
+    user_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="관리자 권한이 없습니다.")
+        
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
+
+    db.delete(user)
+    db.commit()
+    return {"message": "유저가 삭제되었습니다."}
