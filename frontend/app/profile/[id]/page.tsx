@@ -1,4 +1,3 @@
-// app/profile/[id]/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -9,17 +8,17 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // 백엔드 주소 (현재 성공하신 3000 포트 또는 8000 포트 사용)
-  const API_URL = "/api/auth"; 
-
   useEffect(() => {
-    // 유저 상세 정보 불러오기
-    fetch(`${API_URL}/admin/users/${params.id}`, {
+    // 💡 여기도 IP 주소 없이 상대 경로로 수정 완료!
+    fetch(`/api/auth/admin/users/${params.id}`, {
       method: "GET",
       credentials: "include",
     })
-      .then((res) => {
-        if (!res.ok) throw new Error("권한이 없거나 유저를 찾을 수 없습니다.");
+      .then(async (res) => {
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`[에러 코드: ${res.status}] ${errorText}`);
+        }
         return res.json();
       })
       .then((data) => {
@@ -27,8 +26,8 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
         setLoading(false);
       })
       .catch((err) => {
-        alert(err.message);
-        router.push("/admin/users"); // 에러 나면 목록으로 돌려보냄
+        alert(`상세 정보 로딩 실패!\n${err.message}`);
+        router.push("/admin/users"); 
       });
   }, [params.id, router]);
 
@@ -36,7 +35,8 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
     if (!confirm("정말 이 유저를 삭제하시겠습니까? (이 작업은 되돌릴 수 없습니다)")) return;
 
     try {
-      const res = await fetch(`${API_URL}/admin/users/${params.id}`, {
+      // 💡 삭제 요청도 상대 경로로!
+      const res = await fetch(`/api/auth/admin/users/${params.id}`, {
         method: "DELETE",
         credentials: "include",
       });

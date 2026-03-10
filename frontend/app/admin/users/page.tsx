@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation"; // 라우터 임포트
+import { useRouter } from "next/navigation";
 
 // 백엔드에서 받아올 데이터의 형태
 interface User {
@@ -12,22 +12,21 @@ interface User {
 }
 
 export default function AdminUsersPage() {
-  const router = useRouter(); // 라우터 사용 설정
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // 💡 IP 주소를 빼고 상대 경로로 요청합니다! (192든 144든 알아서 맞춰짐)
     fetch("/api/auth/admin/users", {
       method: "GET",
       credentials: "include",
     })
-    })
       .then(async (res) => {
         if (!res.ok) {
-          if (res.status === 403) throw new Error("관리자 권한이 없습니다.");
-          if (res.status === 401) throw new Error("로그인이 필요합니다.");
-          throw new Error("데이터를 불러오는데 실패했습니다.");
+          const errorText = await res.text();
+          throw new Error(`[에러 코드: ${res.status}] ${errorText}`);
         }
         return res.json();
       })
