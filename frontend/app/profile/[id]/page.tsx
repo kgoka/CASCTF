@@ -1,16 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation"; // 💡 useParams 추가
 
-export default function ProfilePage({ params }: { params: { id: string } }) {
+export default function ProfilePage() {
   const router = useRouter();
+  const params = useParams(); // 💡 최신 Next.js 방식: Hook으로 파라미터 가져오기
+  const id = params.id; // 여기서 URL의 '2'를 안전하게 가져옵니다.
+
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 💡 여기도 IP 주소 없이 상대 경로로 수정 완료!
-    fetch(`/api/auth/admin/users/${params.id}`, {
+    if (!id) return; // id 값이 로딩되기 전이면 실행 방지
+
+    fetch(`/api/auth/admin/users/${id}`, {
       method: "GET",
       credentials: "include",
     })
@@ -29,14 +33,13 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
         alert(`상세 정보 로딩 실패!\n${err.message}`);
         router.push("/admin/users"); 
       });
-  }, [params.id, router]);
+  }, [id, router]);
 
   const handleDelete = async () => {
     if (!confirm("정말 이 유저를 삭제하시겠습니까? (이 작업은 되돌릴 수 없습니다)")) return;
 
     try {
-      // 💡 삭제 요청도 상대 경로로!
-      const res = await fetch(`/api/auth/admin/users/${params.id}`, {
+      const res = await fetch(`/api/auth/admin/users/${id}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -84,7 +87,7 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
           <div className="flex gap-4">
             <button 
               className="px-6 py-2 bg-zinc-800 text-zinc-300 rounded hover:bg-zinc-700 transition text-sm"
-              onClick={() => alert("정보 수정 모달을 띄우는 기능은 다음 단계에서 구현합니다!")}
+              onClick={() => alert("정보 수정 기능은 곧 추가됩니다!")}
             >
               Edit Profile
             </button>
