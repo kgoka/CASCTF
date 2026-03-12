@@ -53,9 +53,12 @@ export function MainHeader({
             Manage
           </Link>
         )}
-        <button className="mono-btn rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em]">
+        <Link 
+          href={authUser?.id ? `/profile/${authUser.id}` : "#"}
+          className="mono-btn rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition hover:bg-white/10"
+        >
           {authUser?.username ? `${authUser.username} (${authUser.score} pt)` : "My Profile"}
-        </button>
+        </Link>
         <button
           onClick={onToggleTheme}
           aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}

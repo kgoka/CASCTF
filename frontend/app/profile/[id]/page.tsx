@@ -1,20 +1,48 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation"; // 💡 useParams 추가
+import { useParams, useRouter } from "next/navigation";
+
+// 백엔드에서 받아올 데이터 타입 정의
+interface SolvedChallenge {
+  challenge_id: number;
+  challenge_name: string;
+  category: string;
+  point: number;
+  solved_at_ts: number;
+}
+
+interface UserProfile {
+  id: number;
+  username: string;
+  role: string;
+  score: number;
+  solves: SolvedChallenge[];
+}
+
+// 타임스탬프를 예쁜 날짜/시간 형식으로 변환하는 함수
+const formatDateTime = (ts: number) => {
+  const date = new Date(ts * 1000);
+  const yyyy = date.getFullYear();
+  const MM = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  return `${yyyy}-${MM}-${dd} ${hh}:${mm}`;
+};
 
 export default function ProfilePage() {
   const router = useRouter();
-  const params = useParams(); // 💡 최신 Next.js 방식: Hook으로 파라미터 가져오기
-  const id = params.id; // 여기서 URL의 '2'를 안전하게 가져옵니다.
+  const params = useParams();
+  const id = params?.id;
 
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!id) return; // id 값이 로딩되기 전이면 실행 방지
+    if (!id) return;
 
-    fetch(`/api/auth/admin/users/${id}`, {
+    fetch(`/api/auth/profile/${id}`, {
       method: "GET",
       credentials: "include",
     })
@@ -25,81 +53,99 @@ export default function ProfilePage() {
         }
         return res.json();
       })
-      .then((data) => {
+      .then((data: UserProfile) => {
         setUser(data);
         setLoading(false);
       })
       .catch((err) => {
-        alert(`상세 정보 로딩 실패!\n${err.message}`);
-        router.push("/admin/users"); 
+        alert(`프로필을 불러올 수 없습니다.\n${err.message}`);
+        router.push("/main");
       });
   }, [id, router]);
 
-  const handleDelete = async () => {
-    if (!confirm("정말 이 유저를 삭제하시겠습니까? (이 작업은 되돌릴 수 없습니다)")) return;
-
-    try {
-      const res = await fetch(`/api/auth/admin/users/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (res.ok) {
-        alert("유저가 삭제되었습니다.");
-        router.push("/admin/users");
-      } else {
-        alert("삭제에 실패했습니다.");
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  if (loading) return <div className="p-8 text-zinc-400">Loading Profile...</div>;
+  if (loading) return <div className="p-10 text-zinc-400 flex justify-center items-center min-h-[50vh]">Loading Profile...</div>;
   if (!user) return null;
 
   return (
-    <div className="max-w-3xl mx-auto py-12 px-6">
-      <section className="frame rounded-xl p-8">
-        <div className="border-b border-zinc-800 pb-6 mb-6 flex justify-between items-center">
+    <div className="max-w-4xl mx-auto py-12 px-6 space-y-8">
+      
+      {/* 1. 상단 프로필 요약 카드 */}
+      <section className="frame rounded-xl p-8 relative overflow-hidden">
+        {/* 장식용 배경 효과 */}
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-zinc-800/50 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Player Profile</p>
-            <h1 className="text-4xl font-semibold text-zinc-100 mt-2">{user.username}</h1>
+            <p className="text-xs uppercase tracking-[0.2em] text-zinc-500 mb-2">Hacker Profile</p>
+            <div className="flex items-center gap-4">
+              <h1 className="text-4xl md:text-5xl font-bold text-zinc-100">{user.username}</h1>
+              <span className={`px-3 py-1 text-xs uppercase tracking-wider rounded-full border ${
+                user.role === 'admin' 
+                  ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' 
+                  : 'bg-zinc-800 text-zinc-300 border-zinc-700'
+              }`}>
+                {user.role}
+              </span>
+            </div>
+            <p className="text-sm text-zinc-400 mt-4 font-mono">User ID: #{user.id}</p>
           </div>
-          <span className="px-3 py-1 bg-zinc-800 text-zinc-300 rounded-full text-xs uppercase tracking-wider border border-zinc-700">
-            {user.role}
-          </span>
-        </div>
 
-        <div className="grid grid-cols-2 gap-6 mb-10">
-          <div className="bg-zinc-900/50 p-5 rounded-lg border border-zinc-800">
-            <p className="text-xs text-zinc-500 mb-1">User ID</p>
-            <p className="text-lg text-zinc-200 font-mono">#{user.id}</p>
-          </div>
-          <div className="bg-zinc-900/50 p-5 rounded-lg border border-zinc-800">
-            <p className="text-xs text-zinc-500 mb-1">Total Score</p>
-            <p className="text-lg text-emerald-400 font-bold">{user.score} pts</p>
-          </div>
-        </div>
-
-        {/* 관리자 전용 액션 구역 */}
-        <div className="pt-6 border-t border-red-900/30">
-          <p className="text-xs text-red-500 uppercase tracking-widest mb-4">Danger Zone (Admin Only)</p>
-          <div className="flex gap-4">
-            <button 
-              className="px-6 py-2 bg-zinc-800 text-zinc-300 rounded hover:bg-zinc-700 transition text-sm"
-              onClick={() => alert("정보 수정 기능은 곧 추가됩니다!")}
-            >
-              Edit Profile
-            </button>
-            <button 
-              className="px-6 py-2 bg-red-900/40 text-red-400 border border-red-900 hover:bg-red-900/80 transition rounded text-sm"
-              onClick={handleDelete}
-            >
-              Delete User
-            </button>
+          <div className="bg-zinc-900/80 border border-zinc-800 rounded-lg p-6 min-w-[200px] text-center">
+            <p className="text-xs uppercase tracking-[0.15em] text-zinc-500 mb-1">Total Score</p>
+            <p className="text-4xl font-black text-emerald-400 font-mono">
+              {user.score} <span className="text-lg text-emerald-600">pt</span>
+            </p>
           </div>
         </div>
       </section>
+
+      {/* 2. 문제 풀이 기록 (Solve History) */}
+      <section className="frame rounded-xl p-8">
+        <div className="flex justify-between items-end border-b border-zinc-800 pb-4 mb-6">
+          <h2 className="text-lg font-semibold text-zinc-200 uppercase tracking-widest">
+            Solve History
+          </h2>
+          <span className="text-sm text-zinc-500 font-mono">
+            Total {user.solves.length} Solved
+          </span>
+        </div>
+
+        {user.solves.length === 0 ? (
+          <div className="py-12 text-center text-zinc-500 bg-zinc-900/30 rounded-lg border border-zinc-800/50">
+            아직 푼 문제가 없습니다. 첫 블러드를 노려보세요! 🩸
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {user.solves.map((solve, index) => (
+              <div 
+                key={solve.challenge_id} 
+                className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-zinc-900/50 hover:bg-zinc-800/50 border border-zinc-800/80 rounded-lg transition-colors gap-4"
+              >
+                {/* 왼쪽: 카테고리 & 문제 이름 */}
+                <div className="flex items-center gap-4">
+                  <span className="text-xs font-semibold px-2.5 py-1 bg-zinc-800 text-zinc-300 rounded uppercase tracking-wider w-24 text-center">
+                    {solve.category}
+                  </span>
+                  <span className="text-zinc-100 font-medium text-lg">
+                    {solve.challenge_name}
+                  </span>
+                </div>
+
+                {/* 오른쪽: 점수 & 시간 */}
+                <div className="flex items-center justify-between sm:justify-end gap-6 min-w-[200px]">
+                  <span className="font-mono font-bold text-emerald-400">
+                    +{solve.point} pt
+                  </span>
+                  <span className="text-xs text-zinc-500 font-mono">
+                    {formatDateTime(solve.solved_at_ts)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
     </div>
   );
 }
