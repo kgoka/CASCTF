@@ -136,7 +136,6 @@ export default function AdminScoreboardPage() {
                   tickFormatter={formatTime} 
                   stroke="#71717a"
                   tick={{ fontSize: 11, fill: '#a1a1aa' }}
-                  type="number"
                   allowDuplicatedCategory={false}
                 />
                 
