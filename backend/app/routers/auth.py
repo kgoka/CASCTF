@@ -110,10 +110,11 @@ def get_user_detail(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="관리자 권한이 없습니다.")
+    #if current_user.role != "admin":
+    #   raise HTTPException(status_code=403, detail="관리자 권한이 없습니다.")
     
     user = db.query(User).filter(User.id == user_id).first()
+    users = db.query(User).order_by(User.score.desc()).all()
     if not user:
         raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
     return user
