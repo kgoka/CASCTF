@@ -54,9 +54,10 @@ export function MainHeader({
           </Link>
         )}
         <Link 
-          href={authUser?.id ? `/profile/${authUser.id}` : "#"}
-          className="mono-btn rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition hover:bg-white/10"
-        >
+            // authUser 정보만 있다면 id가 0이어도 일단 이동을 시도합니다.
+            href={authUser ? `/profile/${authUser.id}` : "#"}
+            className="mono-btn rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition hover:bg-white/10"
+          >
           {authUser?.username ? `${authUser.username} (${authUser.score} pt)` : "My Profile"}
         </Link>
         <button
