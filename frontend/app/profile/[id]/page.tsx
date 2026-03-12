@@ -36,13 +36,16 @@ export default function ProfilePage() {
   const params = useParams();
   const id = params?.id;
 
+  // 백엔드 서버 주소를 환경변수에서 가져옵니다.
+  const apiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/$/, "");
+
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!id) return;
-
-    fetch(`/api/auth/profile/${id}`, {
+    
+    fetch(`${apiBaseUrl}/api/auth/profile/${id}`, {
       method: "GET",
       credentials: "include",
     })
@@ -61,7 +64,7 @@ export default function ProfilePage() {
         alert(`프로필을 불러올 수 없습니다.\n${err.message}`);
         router.push("/main");
       });
-  }, [id, router]);
+  }, [id, router, apiBaseUrl]);
 
   if (loading) return <div className="p-10 text-zinc-400 flex justify-center items-center min-h-[50vh]">Loading Profile...</div>;
   if (!user) return null;
