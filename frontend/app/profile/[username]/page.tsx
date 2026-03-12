@@ -34,7 +34,7 @@ const formatDateTime = (ts: number) => {
 export default function ProfilePage() {
   const router = useRouter();
   const params = useParams();
-  const id = params?.id;
+  const id = params?.username;
 
   const apiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/$/, "");
 
@@ -44,7 +44,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!id) return;
 
-    fetch(`${apiBaseUrl}/api/auth/profile/${id}`, {
+    fetch(`${apiBaseUrl}/api/auth/profile/${username}`, {
       method: "GET",
       credentials: "include",
     })
