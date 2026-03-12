@@ -107,8 +107,7 @@ def build_scoreboard_rows(db: Session) -> list[dict]:
         .filter(ChallengeSolve.user_id.in_(user_ids))
         .group_by(ChallengeSolve.user_id)
         .all()
-        if user_ids
-        else []
+        if user_ids else []
     )
     solved_counts = {user_id: count for user_id, count in solved_count_rows}
 
@@ -117,10 +116,28 @@ def build_scoreboard_rows(db: Session) -> list[dict]:
         .filter(ChallengeSolve.user_id.in_(user_ids))
         .group_by(ChallengeSolve.user_id)
         .all()
-        if user_ids
-        else []
+        if user_ids else []
     )
     last_solve_map = {user_id: solved_at_ts for user_id, solved_at_ts in last_solve_rows}
+
+    challenges = db.query(Challenge).all()
+    c_ids = [c.id for c in challenges]
+    solve_counts = get_challenge_solve_count_map(db, c_ids)
+    challenge_values = {
+        c.id: compute_challenge_value(c, solve_counts.get(c.id, 0)) for c in challenges
+    }
+
+    solves = db.query(ChallengeSolve).order_by(ChallengeSolve.solved_at_ts.asc()).all()
+    user_history = defaultdict(list)
+    user_running_score = defaultdict(int)
+
+    for s in solves:
+        if s.user_id in user_ids:
+            user_running_score[s.user_id] += challenge_values.get(s.challenge_id, 0)
+            user_history[s.user_id].append({
+                "ts": s.solved_at_ts,
+                "score": user_running_score[s.user_id]
+            })
 
     ranked = sorted(
         users,
@@ -141,6 +158,7 @@ def build_scoreboard_rows(db: Session) -> list[dict]:
                 "score": user.score,
                 "solved_count": solved_counts.get(user.id, 0),
                 "last_solve_ts": last_solve_map.get(user.id),
+                "history": user_history.get(user.id, []),
             }
         )
     return rows
