@@ -73,6 +73,7 @@ def login(user: UserLogin, response: Response, db: Session = Depends(get_db)):
 
     return {
         "message": "Login successful.",
+        "id": db_user.id,
         "username": db_user.username,
         "role": db_user.role,
         "score": db_user.score,

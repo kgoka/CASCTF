@@ -36,7 +36,6 @@ export default function ProfilePage() {
   const params = useParams();
   const id = params?.id;
 
-  // 백엔드 서버 주소를 환경변수에서 가져옵니다.
   const apiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/$/, "");
 
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -44,7 +43,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!id) return;
-    
+
     fetch(`${apiBaseUrl}/api/auth/profile/${id}`, {
       method: "GET",
       credentials: "include",
@@ -70,8 +69,26 @@ export default function ProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-6 space-y-8">
+    <div className="max-w-4xl mx-auto py-12 px-6 space-y-6">
       
+      {/* 뒤로 가기(닫기) 버튼 */}
+      <button
+        onClick={() => router.back()} // 이전 페이지로 돌아가는 마법의 함수!
+        className="group flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500 transition-colors hover:text-emerald-400"
+      >
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          className="h-4 w-4 transition-transform group-hover:-translate-x-1" 
+          fill="none" 
+          viewBox="0 0 24 24" 
+          stroke="currentColor" 
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Go Back
+      </button>
+
       {/* 1. 상단 프로필 요약 카드 */}
       <section className="frame rounded-xl p-8 relative overflow-hidden">
         {/* 장식용 배경 효과 */}
@@ -119,7 +136,7 @@ export default function ProfilePage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {user.solves.map((solve, index) => (
+            {user.solves.map((solve) => (
               <div 
                 key={solve.challenge_id} 
                 className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-zinc-900/50 hover:bg-zinc-800/50 border border-zinc-800/80 rounded-lg transition-colors gap-4"
