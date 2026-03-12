@@ -6,6 +6,7 @@ export function normalizeAuthUser(input: Partial<AuthUser> | null): AuthUser | n
   }
 
   return {
+    id: typeof input.id === "number" ? input.id : 0,
     username: input.username,
     role: input.role ?? "player",
     score: typeof input.score === "number" ? input.score : 0,
