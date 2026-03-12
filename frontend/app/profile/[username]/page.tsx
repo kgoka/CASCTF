@@ -42,7 +42,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (username) return;
+    if (!username) return;
 
     fetch(`${apiBaseUrl}/api/auth/profile/${username}`, {
       method: "GET",
@@ -63,7 +63,7 @@ export default function ProfilePage() {
         alert(`프로필을 불러올 수 없습니다.\n${err.message}`);
         router.push("/main");
       });
-  }, [id, router, apiBaseUrl]);
+  }, [username, router, apiBaseUrl]);
 
   if (loading) return <div className="p-10 text-zinc-400 flex justify-center items-center min-h-[50vh]">Loading Profile...</div>;
   if (!user) return null;
