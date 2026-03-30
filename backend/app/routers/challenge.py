@@ -22,6 +22,7 @@ from ..models.challenge_file import ChallengeFile
 from ..models.challenge_instance import ChallengeInstance
 from ..models.challenge_solve import ChallengeSolve
 from ..models.user import User
+from ..models.submission import Submission
 from ..schemas.challenge import (
     ChallengeAdminResponse,
     ChallengeCreate,
@@ -689,10 +690,24 @@ def submit_flag(
         )
         .first()
     )
-    if already:
+    provided_flag = payload.flag.strip()
+    is_correct = (provided_flag == challenge.flag)
+
+    # 1. 정답이든 오답이든 일단 DB에 기록 
+    new_submission = Submission(
+        user_id=current_user.id,
+        challenge_id=challenge.id,
+        provided_flag=provided_flag,
+        is_correct=is_correct
+    )
+    db.add(new_submission)
+    db.commit() # 여기서 DB에 영구 저장 (삽질 기록 획득!)
+
+    # 2. 오답이라면 여기서 튕겨냄
+    if not is_correct:
         return {
-            "success": True,
-            "message": "Already solved.",
+            "success": False,
+            "message": "Incorrect flag.",
             "awarded_point": 0,
             "total_score": current_user.score,
             "blood": None,

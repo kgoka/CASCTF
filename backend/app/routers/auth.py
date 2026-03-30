@@ -12,6 +12,8 @@ from ..models.challenge import Challenge
 from ..models.challenge_solve import ChallengeSolve
 from ..services.scoring import get_challenge_solve_count_map, compute_challenge_value
 
+# 🚨 [추가됨] 방금 새로 만든 오답/정답 제출 기록 모델을 불러옵니다!
+from ..models.submission import Submission
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 # 비밀번호 해시/검증 설정
@@ -110,11 +112,7 @@ def get_user_detail(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    #if current_user.role != "admin":
-    #   raise HTTPException(status_code=403, detail="관리자 권한이 없습니다.")
-    
     user = db.query(User).filter(User.id == user_id).first()
-    users = db.query(User).order_by(User.score.desc()).all()
     if not user:
         raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
     return user
@@ -165,14 +163,14 @@ def delete_user(
     return {"message": "유저가 삭제되었습니다."}
 
 # 누구나 볼 수 있는 퍼블릭 프로필 API (username 기반으로 변경)
-@router.get("/profile/{username}")  # <- id 대신 username을 경로 파라미터로 받습니다.
+@router.get("/profile/{username}")  
 def get_public_profile(username: str, db: Session = Depends(get_db)):
     # 1. 유저 기본 정보 조회 (username으로 필터링)
     user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # 2. 유저가 푼 문제 데이터 가져오기 (이 부분은 내부 로직이므로 user.id를 그대로 써도 무방합니다)
+    # 2. 유저가 푼 문제 데이터 가져오기
     solves = (
         db.query(ChallengeSolve, Challenge)
         .join(Challenge, ChallengeSolve.challenge_id == Challenge.id)
@@ -221,13 +219,13 @@ def reset_ctf_season(
         raise HTTPException(status_code=403, detail="시즌을 초기화할 권한이 없습니다.")
 
     try:
-        # 2. 풀이 기록 테이블(ChallengeSolve) 싹 비우기
-        # (주의: 테이블 이름이 모델명과 다를 수 있습니다. sqlalchemy 모델 삭제 방식 사용)
+        # 2. 정답 기록 테이블 싹 비우기
         db.query(ChallengeSolve).delete()
         
+        # 🚨 [추가됨] 오답/삽질 기록(Submission) 테이블도 같이 비워줍니다!
+        db.query(Submission).delete()
+        
         # 3. 유저 테이블(User)에서 관리자 빼고 싹 비우기
-        # 현재 접속한 관리자(current_user)는 절대 지워지지 않도록 보호합니다.
-        # (만약 'admin' 롤을 가진 모든 사람을 살리고 싶다면 User.role == 'admin' 조건 사용)
         db.query(User).filter(User.id != current_user.id).filter(User.role != 'admin').delete()
         
         # 4. 관리자 계정의 점수(score)도 0으로 초기화
@@ -235,8 +233,54 @@ def reset_ctf_season(
 
         # 5. DB에 변경사항 영구 저장
         db.commit()
-        return {"message": "✅ 새로운 CTF 시즌 준비가 완료되었습니다. 모든 유저 데이터와 풀이 기록이 초기화되었습니다."}
+        return {"message": "✅ 새로운 CTF 시즌 준비가 완료되었습니다. 모든 유저 데이터와 풀이/제출 기록이 초기화되었습니다."}
     
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"DB 초기화 중 에러가 발생했습니다: {str(e)}")
+
+# -------------------------------------------------------------
+# 📋 [신규 추가] 관리자 전용 실시간 전체 제출(오답 포함) 로그 조회 API
+# -------------------------------------------------------------
+@router.get("/admin/submissions")
+def get_all_submissions_for_admin(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # 1. 관리자 권한 검증
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="관리자 권한이 없습니다.")
+
+    try:
+        # 2. Submission 테이블에서 정답/오답 기록을 모두 끌어옵니다.
+        results = (
+            db.query(
+                Submission.id,
+                User.username,
+                Challenge.name.label("challenge_name"),
+                Submission.provided_flag,
+                Submission.is_correct,
+                Submission.created_at
+            )
+            .join(User, Submission.user_id == User.id)
+            .join(Challenge, Submission.challenge_id == Challenge.id)
+            .order_by(Submission.created_at.desc())
+            .limit(500)
+            .all()
+        )
+
+        logs = []
+        for r in results:
+            logs.append({
+                "id": r.id,
+                "username": r.username,
+                "challenge_name": r.challenge_name,
+                "provided_flag": r.provided_flag, 
+                "is_correct": r.is_correct,
+                "created_at": r.created_at.isoformat() if r.created_at else None
+            })
+
+        return logs
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"로그를 불러오는 중 에러가 발생했습니다: {str(e)}")
