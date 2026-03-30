@@ -5,8 +5,8 @@ export type AuthUser = {
   score: number;
 };
 
-export type Category = "OSINT" | "Web" | "Forensics" | "Pwn" | "Reversing" | "Network";
-export type Difficulty = "NORMAL" | "HARD";
+export type Category = "OSINT" | "Misc" | "Crypto" | "Web" | "Forensics" | "Pwn" | "Reversing" | "Network";
+export type Difficulty = "EASY" | "NORMAL" | "HARD";
 
 export type ChallengeItem = {
   id: number;
