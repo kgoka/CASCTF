@@ -39,8 +39,8 @@ type DockerTemplateItem = {
   default_container_port: number | null;
 };
 
-const CATEGORY_OPTIONS: Category[] = ["OSINT", "Web", "Forensics", "Pwn", "Reversing", "Network"];
-const DIFFICULTY_OPTIONS: Difficulty[] = ["NORMAL", "HARD"];
+const CATEGORY_OPTIONS: Category[] = ["OSINT", "Misc", "Crypto", "Web", "Forensics", "Pwn", "Reversing", "Network"];
+const DIFFICULTY_OPTIONS: Difficulty[] = ["EASY", "NORMAL", "HARD"];
 const STATE_OPTIONS: ChallengeState[] = ["Visible", "Hidden"];
 
 export default function AdminChallengePage() {
