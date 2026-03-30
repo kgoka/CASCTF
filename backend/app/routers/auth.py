@@ -207,3 +207,36 @@ def get_public_profile(username: str, db: Session = Depends(get_db)):
         "score": user.score,
         "solves": solved_list
     }
+    
+# -------------------------------------------------------------
+# 🚨 [DANGER ZONE] 시즌 초기화 API
+# -------------------------------------------------------------
+@router.delete("/admin/reset-season")
+def reset_ctf_season(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # 1. 최고 관리자(admin) 권한이 맞는지 철저히 검증
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="시즌을 초기화할 권한이 없습니다.")
+
+    try:
+        # 2. 풀이 기록 테이블(ChallengeSolve) 싹 비우기
+        # (주의: 테이블 이름이 모델명과 다를 수 있습니다. sqlalchemy 모델 삭제 방식 사용)
+        db.query(ChallengeSolve).delete()
+        
+        # 3. 유저 테이블(User)에서 관리자 빼고 싹 비우기
+        # 현재 접속한 관리자(current_user)는 절대 지워지지 않도록 보호합니다.
+        # (만약 'admin' 롤을 가진 모든 사람을 살리고 싶다면 User.role == 'admin' 조건 사용)
+        db.query(User).filter(User.id != current_user.id).filter(User.role != 'admin').delete()
+        
+        # 4. 관리자 계정의 점수(score)도 0으로 초기화
+        db.query(User).update({User.score: 0})
+
+        # 5. DB에 변경사항 영구 저장
+        db.commit()
+        return {"message": "✅ 새로운 CTF 시즌 준비가 완료되었습니다. 모든 유저 데이터와 풀이 기록이 초기화되었습니다."}
+    
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"DB 초기화 중 에러가 발생했습니다: {str(e)}")

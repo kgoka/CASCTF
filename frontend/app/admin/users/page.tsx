@@ -17,31 +17,67 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // 💡 IP 주소를 빼고 상대 경로로 요청합니다! (192든 144든 알아서 맞춰짐)
-    fetch("/api/auth/admin/users", {
-      method: "GET",
-      credentials: "include",
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(`[에러 코드: ${res.status}] ${errorText}`);
-        }
-        return res.json();
-      })
-      .then((data) => {
-        setUsers(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
+  // 컴포넌트 마운트 시 유저 목록 불러오기
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetch("/api/auth/admin/users", {
+        method: "GET",
+        credentials: "include",
       });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`[에러 코드: ${res.status}] ${errorText}`);
+      }
+
+      const data = await res.json();
+      setUsers(data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void fetchUsers();
   }, []);
 
+  // 🚨 [신규 추가] 시즌 초기화 함수
+  const handleResetSeason = async () => {
+    const confirmWord = window.prompt(
+      "🚨 [경고] 정말로 모든 참가자 데이터와 풀이 기록을 삭제하시겠습니까?\n\n이 작업은 절대 되돌릴 수 없습니다.\n관리자 계정(Admin)은 유지되며 일반 참가자들만 삭제됩니다.\n\n계속하시려면 아래에 'RESET' 이라고 정확히 입력해 주세요."
+    );
+
+    if (confirmWord !== "RESET") {
+      alert("초기화 작업이 취소되었습니다.");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/auth/admin/reset-season", {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(`초기화 실패: ${data?.detail ?? "알 수 없는 오류"}`);
+        return;
+      }
+
+      alert("🎉 성공적으로 새 시즌 준비가 완료되었습니다. 모든 참가자 데이터가 초기화되었습니다.");
+      // 목록 다시 불러오기 (화면 갱신)
+      fetchUsers(); 
+    } catch (e) {
+      alert("서버와 통신할 수 없습니다.");
+    }
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-20">
       {/* 상단 헤더 섹션 */}
       <section className="frame rounded-xl px-5 py-4">
         <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Current Page</p>
@@ -72,7 +108,7 @@ export default function AdminUsersPage() {
               {users.map((user) => (
                 <tr 
                   key={user.id} 
-                  onClick={() => router.push(`/profile/${user.id}`)} 
+                  onClick={() => router.push(`/profile/${user.username}`)} // id 대신 username으로 라우팅 
                   className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors cursor-pointer"
                 >
                   <td className="px-4 py-3">{user.id}</td>
@@ -100,6 +136,21 @@ export default function AdminUsersPage() {
             </tbody>
           </table>
         )}
+      </section>
+
+      {/* 🚨 [신규 추가] Danger Zone 섹션 */}
+      <section className="frame mt-12 rounded-xl border border-rose-500/30 bg-rose-500/5 px-6 py-6 shadow-[0_0_15px_rgba(244,63,94,0.1)]">
+        <h2 className="text-xl font-bold text-rose-400 uppercase tracking-widest">Danger Zone</h2>
+        <p className="mt-2 text-sm text-zinc-400">
+          새로운 CTF 대회를 시작하기 위해 일반 참가자 정보 및 모든 문제 풀이 기록(Solves)을 완전히 삭제합니다.<br />
+          등록된 챌린지 문제들과 관리자(Admin) 계정 정보는 유지됩니다.
+        </p>
+        <button
+          onClick={handleResetSeason}
+          className="mt-5 rounded-lg border border-rose-500 bg-rose-600/20 px-6 py-3 text-sm font-bold uppercase tracking-wider text-rose-300 transition hover:bg-rose-600 hover:text-white"
+        >
+          시즌 초기화 (참가자 DB 삭제)
+        </button>
       </section>
     </div>
   );
