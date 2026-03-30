@@ -657,8 +657,6 @@ export default function MainPage() {
         groupedByCategory={groupedByCategory}
         solvedIdSet={solvedIdSet}
         wrongIdSet={wrongIdSet}
-        categoryScrollRefs={categoryScrollRefs}
-        onScrollCategory={scrollCategory}
         onOpenChallengeModal={openChallengeModal}
         remainingTimeLabel={formattedRemainingTime}
       />
