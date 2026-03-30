@@ -3,8 +3,8 @@ from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 
-CategoryType = Literal["OSINT", "Web", "Forensics", "Pwn", "Reversing", "Network"]
-DifficultyType = Literal["NORMAL", "HARD"]
+CategoryType = Literal["OSINT", "Misc", "Crypto", "Web", "Forensics", "Pwn", "Reversing", "Network"]
+DifficultyType = Literal["EASY", "NORMAL", "HARD"]
 StateType = Literal["Visible", "Hidden"]
 ScoreType = Literal["basic", "dynamic"]
 
