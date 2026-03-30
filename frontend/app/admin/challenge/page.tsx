@@ -2,8 +2,8 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
-type Category = "OSINT" | "Web" | "Forensics" | "Pwn" | "Reversing" | "Network";
-type Difficulty = "NORMAL" | "HARD";
+type Category = "OSINT" | "Misc" | "Crypto" | "Web" | "Forensics" | "Pwn" | "Reversing" | "Network";
+type Difficulty = "EASY" |"NORMAL" | "HARD";
 type ChallengeState = "Visible" | "Hidden";
 type ScoreType = "basic" | "dynamic";
 
