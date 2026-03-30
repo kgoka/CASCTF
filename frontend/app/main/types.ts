@@ -67,4 +67,4 @@ export type PublicConfigResponse = {
   is_active: boolean;
 };
 
-export const CATEGORIES: Category[] = ["OSINT", "Web", "Forensics", "Pwn", "Reversing", "Network"];
+export const CATEGORIES: Category[] = ["OSINT", "Misc", "Crypto", "Web", "Forensics", "Pwn", "Reversing", "Network"];
