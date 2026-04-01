@@ -14,4 +14,5 @@ __all__ = [
     "ChallengeInstance",
     "AppConfig",
     "Notification",
+    "Submission",
 ]

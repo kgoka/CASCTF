@@ -44,7 +44,7 @@ from ..services.docker_runtime import (
     start_compose_project,
     stop_compose_project,
 )
-from ..services.scoring import normalize_dynamic_params, recalculate_all_user_scores
+from ..services.scoring import normalize_dynamic_params, recalculate_all_user_scores, compute_challenge_value, get_challenge_solve_count_map
 from .auth import get_current_user
 
 router = APIRouter(prefix="/api/challenges", tags=["Challenges"])
@@ -308,7 +308,22 @@ def list_visible_challenges(db: Session = Depends(get_db)):
         .order_by(_difficulty_order().asc(), Challenge.id.asc())
         .all()
     )
-    return _attach_file_names(db, items)
+    
+    # 1. 파일 이름 붙이기 (여기서 한 번만 호출하면 됩니다)
+    items = _attach_file_names(db, items)
+    
+    # 2. 문제들의 현재 점수를 계산하기 위한 솔브 수 한 번에 가져오기
+    challenge_ids = [item.id for item in items]
+    solve_counts_map = get_challenge_solve_count_map(db, challenge_ids)
+    
+    # 3. 각 문제 객체에 계산된 점수(dynamic_score) 주입하기
+    for challenge in items:
+        solves = solve_counts_map.get(challenge.id, 0)
+        current_score = compute_challenge_value(challenge, solves)
+        challenge.dynamic_score = current_score
+        
+    # 4. 이미 items에 파일 이름과 dynamic_score가 모두 들어있으므로 그냥 리턴!
+    return items
 
 
 @router.get("/admin", response_model=List[ChallengeAdminResponse])

@@ -91,12 +91,13 @@ export function ChallengeCategoriesSection({
                             {item.message || "No description"}
                           </p>
                           <div className="mt-4 flex items-center justify-between text-xs uppercase tracking-[0.12em]">
-                            <span className="challenge-pill rounded-md border px-2 py-1">
-                              {item.score_type}
-                            </span>
-                            <span className="challenge-point">{item.point} pt</span>
-                          </div>
+                          <span className="challenge-pill rounded-md border px-2 py-1">
+                            {item.score_type}
+                          </span>
+                          {/* 👇 dynamic_score가 있으면 띄우고, 없으면 point를 띄웁니다. */}
+                          <span className="challenge-point">{item.dynamic_score ?? item.point} pt</span>
                         </div>
+                      </div>
                       </button>
                     );
                   })}

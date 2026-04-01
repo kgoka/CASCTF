@@ -9,7 +9,7 @@ from ..models.challenge_solve import ChallengeSolve
 from ..models.user import User
 
 DEFAULT_DYNAMIC_MIN_POINT = 100
-DEFAULT_DYNAMIC_DECAY = 50
+DEFAULT_DYNAMIC_DECAY = 5
 
 
 def normalize_dynamic_params(

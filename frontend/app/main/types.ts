@@ -21,6 +21,7 @@ export type ChallengeItem = {
   attachment_file_name?: string | null;
   docker_enabled: boolean;
   docker_template_id?: string | null;
+  dynamic_score?: number;
 };
 
 export type FlagSubmitResponse = {

@@ -66,6 +66,7 @@ class ChallengeResponse(BaseModel):
     attachment_file_name: Optional[str] = None
     docker_enabled: bool
     docker_template_id: Optional[str] = None
+    dynamic_score: Optional[int] = None
 
     class Config:
         orm_mode = True
