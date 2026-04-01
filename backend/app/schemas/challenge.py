@@ -103,3 +103,10 @@ class FlagSubmitResponse(BaseModel):
     awarded_point: int
     total_score: int
     blood: Optional[Literal["first", "second", "third"]] = None
+    
+class ChallengeSolveItem(BaseModel):
+    username: str
+    solved_at_ts: int
+
+    class Config:
+        orm_mode = True

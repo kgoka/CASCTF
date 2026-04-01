@@ -68,4 +68,9 @@ export type PublicConfigResponse = {
   is_active: boolean;
 };
 
+export type ChallengeSolveItem = {
+  username: string;
+  solved_at_ts: number;
+};
+
 export const CATEGORIES: Category[] = ["OSINT", "Misc", "Crypto", "Web", "Forensics", "Pwn", "Reversing", "Network"];

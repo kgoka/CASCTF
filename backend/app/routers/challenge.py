@@ -31,6 +31,7 @@ from ..schemas.challenge import (
     ChallengeResponse,
     ChallengeServerAccessResponse,
     ChallengeUpdate,
+    ChallengeSolveItem,
     FlagSubmitRequest,
     FlagSubmitResponse,
 )
@@ -546,6 +547,34 @@ def delete_challenge(
     db.commit()
     recalculate_all_user_scores(db)
     return None
+
+
+# 👇 여기에 문제를 푼 사람 목록(Solves)을 가져오는 새로운 API 엔드포인트를 추가했습니다!
+@router.get("/{challenge_id}/solves", response_model=List[ChallengeSolveItem])
+def get_challenge_solves(
+    challenge_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    challenge = db.query(Challenge).filter(Challenge.id == challenge_id).first()
+    if not challenge:
+        raise HTTPException(status_code=404, detail="Challenge not found")
+
+    # 숨겨진 문제(Hidden)는 관리자만 볼 수 있도록 방어 코드 추가
+    if challenge.state != "Visible" and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    # ChallengeSolve 테이블과 User 테이블을 Join하여 누가 언제 풀었는지 빠른 순서대로 가져옵니다.
+    solves = (
+        db.query(ChallengeSolve.solved_at_ts, User.username)
+        .join(User, ChallengeSolve.user_id == User.id)
+        .filter(ChallengeSolve.challenge_id == challenge_id)
+        .order_by(ChallengeSolve.solved_at_ts.asc())
+        .all()
+    )
+
+    return [{"username": row.username, "solved_at_ts": row.solved_at_ts} for row in solves]
+# 👆 추가된 부분 끝!
 
 
 @router.get("/{challenge_id}/file")

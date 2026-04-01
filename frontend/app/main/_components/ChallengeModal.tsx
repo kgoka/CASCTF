@@ -1,8 +1,9 @@
 "use client";
 
-import type { ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 
-import type { ChallengeItem, ChallengeServerAccessResponse } from "../types";
+// 👇 추가된 부분: ChallengeSolveItem 타입 임포트
+import type { ChallengeItem, ChallengeServerAccessResponse, ChallengeSolveItem } from "../types";
 
 type ChallengeModalProps = {
   selectedChallenge: ChallengeItem | null;
@@ -41,6 +42,32 @@ export function ChallengeModal({
   onSubmitFlag,
   onRequestChallengeServer,
 }: ChallengeModalProps) {
+  // 👇 추가된 부분: 솔브 목록 상태(State) 관리
+  const [solves, setSolves] = useState<ChallengeSolveItem[]>([]);
+  const [isLoadingSolves, setIsLoadingSolves] = useState(false);
+
+  // 👇 추가된 부분: 모달이 열릴 때 API를 호출하여 정답자 목록을 가져오는 Hook
+  useEffect(() => {
+    if (!selectedChallenge) return;
+
+    const fetchSolves = async () => {
+      setIsLoadingSolves(true);
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/challenges/${selectedChallenge.id}/solves`);
+        if (response.ok) {
+          const data = await response.json();
+          setSolves(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch solves:", error);
+      } finally {
+        setIsLoadingSolves(false);
+      }
+    };
+
+    fetchSolves();
+  }, [selectedChallenge, apiBaseUrl]);
+
   if (!selectedChallenge) {
     return null;
   }
@@ -151,6 +178,49 @@ export function ChallengeModal({
             {serverMessage && <p className="mt-2 text-sm text-zinc-300">{serverMessage}</p>}
           </div>
         )}
+
+        {/* 👇 추가된 부분: 정답자(Solves) 목록 표시 UI */}
+        <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+          <p className="text-xs uppercase tracking-[0.14em] text-zinc-400 mb-3">
+            Solves ({solves.length})
+          </p>
+          <div className="max-h-36 overflow-y-auto modal-scrollbar pr-2">
+            {isLoadingSolves ? (
+              <p className="text-sm text-zinc-500">Loading solves...</p>
+            ) : solves.length === 0 ? (
+              <p className="text-sm text-zinc-500">No solves yet. Be the first!</p>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {solves.map((solve, index) => {
+                  // UNIX 타임스탬프를 보기 편한 날짜 문자열로 변환
+                  const dateStr = new Date(solve.solved_at_ts * 1000).toLocaleString("ko-KR", {
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+
+                  // First Blood (1등) 부터 3등까지 색상 차등 적용
+                  let rankStyle = "text-zinc-500";
+                  if (index === 0) rankStyle = "text-rose-500 font-bold drop-shadow-[0_0_5px_rgba(244,63,94,0.3)]";
+                  else if (index === 1) rankStyle = "text-orange-400 font-semibold";
+                  else if (index === 2) rankStyle = "text-yellow-400 font-semibold";
+
+                  return (
+                    <li key={index} className="flex items-center justify-between border-b border-white/5 pb-2 last:border-0 last:pb-0">
+                      <div className="flex items-center gap-3">
+                        <span className={`w-5 text-left text-sm ${rankStyle}`}>#{index + 1}</span>
+                        <span className="text-sm text-zinc-200">{solve.username}</span>
+                      </div>
+                      <span className="text-xs text-zinc-500">{dateStr}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </div>
+        {/* 👆 추가된 부분 끝 */}
 
         <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.03] p-4">
           <p className="text-xs uppercase tracking-[0.14em] text-zinc-400">Submit Flag</p>
