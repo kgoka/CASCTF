@@ -95,7 +95,7 @@ export function ChallengeModal({
             Score Type: {selectedChallenge.score_type}
           </div>
           <div className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2">
-            POINT: {challenge.dynamic_score ?? challenge.point}
+            POINT: {selectedChallenge.dynamic_score ?? selectedChallenge.point}
           </div>
           <div className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2">
             State: {selectedChallenge.state}
