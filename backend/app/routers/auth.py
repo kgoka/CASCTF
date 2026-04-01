@@ -1,7 +1,8 @@
 ﻿from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Literal # 🚨 Literal 추가
+from pydantic import BaseModel # 🚨 BaseModel 추가
 
 from ..core.config import ACCESS_TOKEN_COOKIE_NAME, ACCESS_TOKEN_EXPIRE_MINUTES
 from ..core.security import create_access_token, decode_access_token
@@ -12,12 +13,15 @@ from ..models.challenge import Challenge
 from ..models.challenge_solve import ChallengeSolve
 from ..services.scoring import get_challenge_solve_count_map, compute_challenge_value
 
-# 🚨 [추가됨] 방금 새로 만든 오답/정답 제출 기록 모델을 불러옵니다!
+# 방금 새로 만든 오답/정답 제출 기록 모델
 from ..models.submission import Submission
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
-# 비밀번호 해시/검증 설정
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# 🚨 [신규 추가] 권한 토글용 Pydantic 스키마 정의 (일반 유저는 'player'로 칭함)
+class UserRoleUpdate(BaseModel):
+    role: Literal["admin", "player"]
 
 
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
@@ -42,12 +46,10 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
 
 @router.post("/signup")
 def signup(user: UserCreate, db: Session = Depends(get_db)):
-    # 동일 username 중복 가입 방지
     db_user = db.query(User).filter(User.username == user.username).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Username already exists.")
 
-    # 비밀번호는 반드시 해시로 저장
     hashed_password = pwd_context.hash(user.password)
     new_user = User(username=user.username, password_hash=hashed_password, role="player", score=0)
     db.add(new_user)
@@ -57,7 +59,6 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=LoginResponse)
 def login(user: UserLogin, response: Response, db: Session = Depends(get_db)):
-    # 사용자 조회 후 해시 검증
     db_user = db.query(User).filter(User.username == user.username).first()
     if not db_user or not pwd_context.verify(user.password, db_user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid username or password.")
@@ -95,17 +96,14 @@ def logout(response: Response):
 @router.get("/admin/users", response_model=List[UserListResponse])
 def get_all_users_for_admin(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user) # 현재 로그인한 유저 정보 가져오기
+    current_user: User = Depends(get_current_user) 
 ):
-    # 1. 관리자(admin) 권한이 맞는지 검증
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="관리자 권한이 없습니다.")
 
-    # 2. DB에서 전체 유저 조회 후 반환
     users = db.query(User).all()
     return users
 
-# 1. 특정 유저 상세 조회
 @router.get("/admin/users/{user_id}", response_model=UserListResponse)
 def get_user_detail(
     user_id: int, 
@@ -117,11 +115,10 @@ def get_user_detail(
         raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
     return user
 
-# 2. 특정 유저 정보 수정
 @router.patch("/admin/users/{user_id}")
 def update_user(
     user_id: int, 
-    update_data: UserUpdateRequest, # 방금 만든 스키마
+    update_data: UserUpdateRequest, 
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -144,7 +141,6 @@ def update_user(
     db.commit()
     return {"message": "유저 정보가 성공적으로 수정되었습니다."}
 
-# 3. 특정 유저 삭제
 @router.delete("/admin/users/{user_id}")
 def delete_user(
     user_id: int, 
@@ -162,15 +158,12 @@ def delete_user(
     db.commit()
     return {"message": "유저가 삭제되었습니다."}
 
-# 누구나 볼 수 있는 퍼블릭 프로필 API (username 기반으로 변경)
 @router.get("/profile/{username}")  
 def get_public_profile(username: str, db: Session = Depends(get_db)):
-    # 1. 유저 기본 정보 조회 (username으로 필터링)
     user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # 2. 유저가 푼 문제 데이터 가져오기
     solves = (
         db.query(ChallengeSolve, Challenge)
         .join(Challenge, ChallengeSolve.challenge_id == Challenge.id)
@@ -179,12 +172,10 @@ def get_public_profile(username: str, db: Session = Depends(get_db)):
         .all()
     )
 
-    # 3. 현재 각 문제의 동적 점수 계산을 위한 매핑
     challenges = db.query(Challenge).all()
     c_ids = [c.id for c in challenges]
     solve_counts = get_challenge_solve_count_map(db, c_ids)
 
-    # 4. 데이터 조립
     solved_list = []
     for solve_record, challenge in solves:
         current_point = compute_challenge_value(challenge, solve_counts.get(challenge.id, 0))
@@ -197,7 +188,6 @@ def get_public_profile(username: str, db: Session = Depends(get_db)):
             "solved_at_ts": solve_record.solved_at_ts
         })
 
-    # 최종 결과 반환
     return {
         "id": user.id,
         "username": user.username,
@@ -214,24 +204,15 @@ def reset_ctf_season(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # 1. 최고 관리자(admin) 권한이 맞는지 철저히 검증
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="시즌을 초기화할 권한이 없습니다.")
 
     try:
-        # 2. 정답 기록 테이블 싹 비우기
         db.query(ChallengeSolve).delete()
-        
-        # 🚨 [추가됨] 오답/삽질 기록(Submission) 테이블도 같이 비워줍니다!
         db.query(Submission).delete()
-        
-        # 3. 유저 테이블(User)에서 관리자 빼고 싹 비우기
         db.query(User).filter(User.id != current_user.id).filter(User.role != 'admin').delete()
-        
-        # 4. 관리자 계정의 점수(score)도 0으로 초기화
         db.query(User).update({User.score: 0})
 
-        # 5. DB에 변경사항 영구 저장
         db.commit()
         return {"message": "✅ 새로운 CTF 시즌 준비가 완료되었습니다. 모든 유저 데이터와 풀이/제출 기록이 초기화되었습니다."}
     
@@ -240,19 +221,17 @@ def reset_ctf_season(
         raise HTTPException(status_code=500, detail=f"DB 초기화 중 에러가 발생했습니다: {str(e)}")
 
 # -------------------------------------------------------------
-# 📋 [신규 추가] 관리자 전용 실시간 전체 제출(오답 포함) 로그 조회 API
+# 📋 실시간 전체 제출(오답 포함) 로그 조회 API
 # -------------------------------------------------------------
 @router.get("/admin/submissions")
 def get_all_submissions_for_admin(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # 1. 관리자 권한 검증
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="관리자 권한이 없습니다.")
 
     try:
-        # 2. Submission 테이블에서 정답/오답 기록을 모두 끌어옵니다.
         results = (
             db.query(
                 Submission.id,
@@ -284,3 +263,28 @@ def get_all_submissions_for_admin(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"로그를 불러오는 중 에러가 발생했습니다: {str(e)}")
+
+# -------------------------------------------------------------
+# 👑 [신규 추가] 특정 유저 어드민 권한 부여/강등 API
+# -------------------------------------------------------------
+@router.patch("/admin/users/{target_user_id}/role")
+def update_user_role(
+    target_user_id: int,
+    payload: UserRoleUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # 1. 호출한 사람이 관리자인지 확인
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="관리자 권한이 없습니다.")
+
+    # 2. 권한을 변경할 타겟 유저 검색
+    target = db.query(User).filter(User.id == target_user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="해당 유저를 찾을 수 없습니다.")
+
+    # 3. 권한 변경 (admin <-> player)
+    target.role = payload.role
+    db.commit()
+
+    return {"success": True, "message": f"성공적으로 {target.username}의 권한이 {payload.role}(으)로 변경되었습니다."}

@@ -45,7 +45,38 @@ export default function AdminUsersPage() {
     void fetchUsers();
   }, []);
 
-  // 🚨 [신규 추가] 시즌 초기화 함수
+  // 👑 [신규 추가] 특정 유저 권한 변경 함수 (어드민 토글)
+  const handleRoleChange = async (userId: number, currentRole: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // 행 클릭 시 프로필 페이지로 넘어가는 것을 방지
+
+    const newRole = currentRole === "admin" ? "player" : "admin";
+    const actionText = newRole === "admin" ? "관리자(Admin)로 승급" : "일반 참가자(Player)로 강등";
+
+    if (!window.confirm(`정말로 이 유저를 ${actionText} 하시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/auth/admin/users/${userId}/role`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: newRole }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(`권한 변경 실패: ${data?.detail ?? "알 수 없는 오류"}`);
+        return;
+      }
+
+      alert(`성공적으로 ${actionText} 되었습니다.`);
+      fetchUsers(); // 데이터 갱신
+    } catch (err) {
+      alert("서버와 통신할 수 없습니다.");
+    }
+  };
+
+  // 🚨 시즌 초기화 함수
   const handleResetSeason = async () => {
     const confirmWord = window.prompt(
       "🚨 [경고] 정말로 모든 참가자 데이터와 풀이 기록을 삭제하시겠습니까?\n\n이 작업은 절대 되돌릴 수 없습니다.\n관리자 계정(Admin)은 유지되며 일반 참가자들만 삭제됩니다.\n\n계속하시려면 아래에 'RESET' 이라고 정확히 입력해 주세요."
@@ -102,6 +133,8 @@ export default function AdminUsersPage() {
                 <th className="px-4 py-3 font-medium">Username</th>
                 <th className="px-4 py-3 font-medium">Role</th>
                 <th className="px-4 py-3 font-medium">Score</th>
+                {/* 👇 우측 끝에 권한 관리 열 추가 */}
+                <th className="px-4 py-3 font-medium text-right">관리</th>
               </tr>
             </thead>
             <tbody>
@@ -123,12 +156,25 @@ export default function AdminUsersPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 font-semibold text-emerald-400">{user.score}</td>
+                  <td className="px-4 py-3 text-right">
+                    {/* 👇 승급/강등 토글 버튼 */}
+                    <button
+                      onClick={(e) => handleRoleChange(user.id, user.role, e)}
+                      className={`rounded px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition ${
+                        user.role === 'admin'
+                          ? 'border border-rose-500/50 text-rose-400 hover:bg-rose-500/20'
+                          : 'border border-blue-500/50 text-blue-400 hover:bg-blue-500/20'
+                      }`}
+                    >
+                      {user.role === 'admin' ? "강등하기" : "어드민 임명"}
+                    </button>
+                  </td>
                 </tr>
               ))}
               
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-12 text-center text-zinc-500">
+                  <td colSpan={5} className="px-4 py-12 text-center text-zinc-500">
                     가입된 유저가 없습니다.
                   </td>
                 </tr>
@@ -138,7 +184,7 @@ export default function AdminUsersPage() {
         )}
       </section>
 
-      {/* 🚨 [신규 추가] Danger Zone 섹션 */}
+      {/* 🚨 Danger Zone 섹션 */}
       <section className="frame mt-12 rounded-xl border border-rose-500/30 bg-rose-500/5 px-6 py-6 shadow-[0_0_15px_rgba(244,63,94,0.1)]">
         <h2 className="text-xl font-bold text-rose-400 uppercase tracking-widest">Danger Zone</h2>
         <p className="mt-2 text-sm text-zinc-400">

@@ -737,7 +737,7 @@ def submit_flag(
     provided_flag = payload.flag.strip()
     is_correct = (provided_flag == challenge.flag)
 
-    # 1. 정답이든 오답이든 일단 DB에 기록 
+    # 1. 정답이든 오답이든 일단 DB에 기록 (Submission)
     new_submission = Submission(
         user_id=current_user.id,
         challenge_id=challenge.id,
@@ -745,7 +745,7 @@ def submit_flag(
         is_correct=is_correct
     )
     db.add(new_submission)
-    db.commit() # 여기서 DB에 영구 저장 (삽질 기록 획득!)
+    db.commit() 
 
     # 2. 오답이라면 여기서 튕겨냄
     if not is_correct:
@@ -757,15 +757,18 @@ def submit_flag(
             "blood": None,
         }
 
-    if payload.flag.strip() != challenge.flag:
+    # 👇👇 [핵심 추가] 관리자(Admin)인 경우 ChallengeSolve에 기록하지 않고 바로 리턴!
+    if current_user.role == "admin":
         return {
-            "success": False,
-            "message": "Incorrect flag.",
+            "success": True,
+            "message": "Correct flag! (Admin test - no points awarded)",
             "awarded_point": 0,
             "total_score": current_user.score,
             "blood": None,
         }
+    # 👆👆 추가된 부분 끝
 
+    # 3. 일반 유저의 정답 처리 (기존 로직 유지)
     previous_total_score = current_user.score
     solve = ChallengeSolve(
         user_id=current_user.id,
