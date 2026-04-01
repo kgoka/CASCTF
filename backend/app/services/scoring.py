@@ -49,6 +49,8 @@ def compute_challenge_value(challenge: Challenge, solve_count: int) -> int:
         dynamic_min_point=challenge.dynamic_min_point,
         dynamic_decay=challenge.dynamic_decay,
     )
+    forced_decay = 5
+    
     return compute_dynamic_value(
         initial_point=challenge.point,
         min_point=min_point,
