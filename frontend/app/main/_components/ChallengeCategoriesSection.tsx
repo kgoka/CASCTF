@@ -95,7 +95,9 @@ export function ChallengeCategoriesSection({
                             {item.score_type}
                           </span>
                           {/* 👇 dynamic_score가 있으면 띄우고, 없으면 point를 띄웁니다. */}
-                          <span className="challenge-point">{item.dynamic_score ?? item.point} pt</span>
+                          <span className="challenge-point text-sm font-bold text-emerald-400">
+                            {item.dynamic_score ?? item.point} pt
+                          </span>
                         </div>
                       </div>
                       </button>
