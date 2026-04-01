@@ -33,30 +33,6 @@ def compute_dynamic_value(
     decay: int,
     solve_count: int,
 ) -> int:
-    if solve_count <= 0:
-        return initial_point
-
-    curve = ((min_point - initial_point) / float(decay * decay)) * float(solve_count * solve_count)
-    return max(min_point, int(ceil(curve + initial_point)))
-
-
-def compute_challenge_value(challenge: Challenge, solve_count: int) -> int:
-    if challenge.score_type != "dynamic":
-        return challenge.point
-
-    min_point, decay = normalize_dynamic_params(
-        point=challenge.point,
-        dynamic_min_point=challenge.dynamic_min_point,
-        dynamic_decay=challenge.dynamic_decay,
-    )
-    forced_decay = 5
-    
-    return compute_dynamic_value(
-        initial_point=challenge.point,
-        min_point=min_point,
-        decay=decay,
-        solve_count=solve_count,
-    ) -> int:
     # 1. 아무도 안 풀었거나, 딱 1명(퍼스트 블러드)만 풀었을 때는 만점 유지!
     if solve_count <= 1:
         return initial_point
@@ -67,6 +43,27 @@ def compute_challenge_value(challenge: Challenge, solve_count: int) -> int:
     # 3. 보정된 adjusted_solves 값으로 곡선(Curve) 계산
     curve = ((min_point - initial_point) / float(decay * decay)) * float(adjusted_solves * adjusted_solves)
     return max(min_point, int(ceil(curve + initial_point)))
+
+
+def compute_challenge_value(challenge: Challenge, solve_count: int) -> int:
+    if challenge.score_type != "dynamic":
+        return challenge.point
+
+    min_point, original_decay = normalize_dynamic_params(
+        point=challenge.point,
+        dynamic_min_point=challenge.dynamic_min_point,
+        dynamic_decay=challenge.dynamic_decay,
+    )
+    
+    # 💡 강제 decay 고정 (5명 풀면 최저점 도달)
+    forced_decay = 5 
+    
+    return compute_dynamic_value(
+        initial_point=challenge.point,
+        min_point=min_point,
+        decay=forced_decay,
+        solve_count=solve_count,
+    )
 
 
 def get_challenge_solve_count_map(db: Session, challenge_ids: list[int]) -> dict[int, int]:
